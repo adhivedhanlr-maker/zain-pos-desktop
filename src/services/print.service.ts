@@ -215,7 +215,17 @@ export const printService = {
                 <html>
                 <head>
                     <style>
-                        body { font-family: 'Courier New', monospace; width: 78mm; margin: 0; padding: 0; font-size: 12px; color: #000; }
+                        @page { margin: 0; size: 78mm auto; }
+                        body { 
+                            font-family: 'Courier New', monospace; 
+                            width: 78mm; 
+                            margin: 0; 
+                            padding: 0; 
+                            font-size: 12px; 
+                            color: #000; 
+                            overflow-x: hidden;
+                        }
+                        * { box-sizing: border-box; }
                     </style>
                 </head>
                 <body>${htmlContent}</body>
@@ -245,10 +255,11 @@ export const printService = {
         blocks = JSON.parse(result.data.value);
       } else {
         blocks = [
-          { id: '1', type: 'shop_name', styles: { align: 'center', fontSize: 10, bold: true, marginBottom: 2 }, visible: true },
-          { id: '2', type: 'product_name', styles: { align: 'center', fontSize: 9, marginBottom: 2 }, visible: true },
-          { id: '3', type: 'barcode', styles: { align: 'center', height: 40, marginBottom: 2 }, visible: true },
-          { id: '4', type: 'meta_row', styles: { fontSize: 8, bold: true }, visible: true },
+          { id: '1', type: 'shop_name', styles: { align: 'left', fontSize: 10, bold: true, marginBottom: 0 }, visible: true },
+          { id: '2', type: 'product_name', styles: { align: 'left', fontSize: 8, marginBottom: 2 }, visible: true },
+          { id: '3', type: 'barcode', styles: { align: 'left', height: 40, marginBottom: 0 }, visible: true },
+          { id: '4', type: 'text', content: '4649350', styles: { align: 'left', fontSize: 8, marginBottom: 0 }, visible: true },
+          { id: '5', type: 'price', styles: { align: 'left', fontSize: 12, bold: true, marginBottom: 0 }, visible: true },
         ];
       }
 
@@ -269,10 +280,10 @@ export const printService = {
 
         switch (block.type) {
           case 'shop_name':
-            htmlContent += `<div style="${styleStr}">${data.shopName}</div>`;
+            htmlContent += `<div style="${styleStr}">${block.content || data.shopName}</div>`;
             break;
           case 'product_name':
-            htmlContent += `<div style="${styleStr}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${data.productName}</div>`;
+            htmlContent += `<div style="${styleStr}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${block.content || data.productName}</div>`;
             break;
           case 'price':
             htmlContent += `<div style="${styleStr}">Rs. ${data.price}</div>`;

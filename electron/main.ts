@@ -149,51 +149,60 @@ ipcMain.handle('sales:getNextBillNo', async () => {
 });
 
 // Print handlers
+
 ipcMain.handle('print:receipt', async (_event, data) => {
     const printWindow = new BrowserWindow({
         show: false,
-        width: 302, // 80mm approx
+        width: 302,
         webPreferences: { nodeIntegration: true }
     });
 
-    // Data is now an object containing { html, printerName } or just html string
     const htmlContent = typeof data === 'string' ? data : data.html;
-    // const printerName = data.printerName; // TODO: Implement specific printer selection
 
-    // TODO: Select specific printer if printerName provided
-    // For now leveraging synchronous window.print() in the page or silent print
+    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
 
-    // We inject a script to print and close
-    const htmlWithScript = htmlContent + `
-        <script>
-            window.onload = () => {
-                window.print();
-                setTimeout(() => { window.close(); }, 500); // Wait for print dialog/spool
-            };
-        </script>
-    `;
-
-    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlWithScript)}`);
-    return { success: true };
+    return new Promise((resolve) => {
+        printWindow.webContents.on('did-finish-load', () => {
+            printWindow.webContents.print({
+                silent: true,
+                printBackground: true,
+                margins: { marginType: 'none' }
+            }, (success, failureReason) => {
+                printWindow.close();
+                if (!success) {
+                    console.error('Print failed:', failureReason);
+                    resolve({ success: false, error: failureReason });
+                } else {
+                    resolve({ success: true });
+                }
+            });
+        });
+    });
 });
 
 ipcMain.handle('print:label', async (_event, data) => {
     const printWindow = new BrowserWindow({ show: false });
-
-    // Data is { html } usually
     const htmlContent = data.html || data;
 
-    const htmlWithScript = htmlContent + `
-        <script>
-             window.onload = () => {
-                window.print();
-                setTimeout(() => { window.close(); }, 500);
-            };
-        </script>
-    `;
+    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
 
-    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlWithScript)}`);
-    return { success: true };
+    return new Promise((resolve) => {
+        printWindow.webContents.on('did-finish-load', () => {
+            printWindow.webContents.print({
+                silent: true,
+                printBackground: true,
+                margins: { marginType: 'none' }
+            }, (success, failureReason) => {
+                printWindow.close();
+                if (!success) {
+                    console.error('Label print failed:', failureReason);
+                    resolve({ success: false, error: failureReason });
+                } else {
+                    resolve({ success: true });
+                }
+            });
+        });
+    });
 });
 
 // USB device detection

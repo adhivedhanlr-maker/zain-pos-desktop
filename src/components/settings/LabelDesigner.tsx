@@ -25,10 +25,11 @@ export interface LabelBlock {
 }
 
 const DEFAULT_LABEL_LAYOUT: LabelBlock[] = [
-    { id: '1', type: 'shop_name', styles: { align: 'center', fontSize: 10, bold: true, marginBottom: 2 }, visible: true },
-    { id: '2', type: 'product_name', styles: { align: 'center', fontSize: 9, marginBottom: 2 }, visible: true },
-    { id: '3', type: 'barcode', styles: { align: 'center', height: 40, marginBottom: 2 }, visible: true },
-    { id: '4', type: 'meta_row', styles: { fontSize: 8, bold: true }, visible: true },
+    { id: '1', type: 'shop_name', styles: { align: 'left', fontSize: 10, bold: true, marginBottom: 0 }, visible: true },
+    { id: '2', type: 'product_name', styles: { align: 'left', fontSize: 8, bold: false, marginBottom: 2 }, visible: true },
+    { id: '3', type: 'barcode', styles: { align: 'left', height: 45, marginBottom: 0 }, visible: true },
+    { id: '4', type: 'text', content: '4649350', styles: { align: 'left', fontSize: 8, bold: false, marginBottom: 0 }, visible: true },
+    { id: '5', type: 'price', styles: { align: 'left', fontSize: 12, bold: true, marginBottom: 0 }, visible: true },
 ];
 
 // --- Sortable Item Component ---
@@ -75,11 +76,13 @@ const getBlockIcon = (type: string) => {
 // --- Main Designer Component ---
 export const LabelDesigner: React.FC = () => {
     const [blocks, setBlocks] = useState<LabelBlock[]>(DEFAULT_LABEL_LAYOUT);
-    const [selectedBlock, setSelectedBlock] = useState<LabelBlock | null>(null);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [shopDetails, setShopDetails] = useState({
         shopName: 'Zain POS',
     });
+
+    const selectedBlock = blocks.find(b => b.id === selectedId) || null;
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -144,7 +147,7 @@ export const LabelDesigner: React.FC = () => {
     const handleReset = () => {
         if (confirm('Are you sure you want to reset to the default layout? All changes will be lost.')) {
             setBlocks(DEFAULT_LABEL_LAYOUT);
-            setSelectedBlock(null);
+            setSelectedId(null);
         }
     };
 
@@ -152,31 +155,30 @@ export const LabelDesigner: React.FC = () => {
         const newBlock: LabelBlock = {
             id: Date.now().toString(),
             type,
-            content: type === 'text' ? 'New Text' : '',
+            content: '',
             styles: { align: 'center', fontSize: 10, bold: false, marginTop: 0, marginBottom: 0 },
             visible: true
         };
         setBlocks([...blocks, newBlock]);
-        setSelectedBlock(newBlock);
+        setSelectedId(newBlock.id);
     };
 
     const updateSelectedBlock = (updates: Partial<LabelBlock> | Partial<LabelBlock['styles']>) => {
-        if (!selectedBlock) return;
+        if (!selectedId) return;
 
-        let updatedBlock;
-        if ('align' in updates || 'fontSize' in updates || 'bold' in updates || 'marginTop' in updates || 'marginBottom' in updates || 'height' in updates) {
-            updatedBlock = { ...selectedBlock, styles: { ...selectedBlock.styles, ...updates } };
-        } else {
-            updatedBlock = { ...selectedBlock, ...updates };
-        }
+        setBlocks(prev => prev.map(b => {
+            if (b.id !== selectedId) return b;
 
-        setSelectedBlock(updatedBlock);
-        setBlocks(blocks.map(b => b.id === selectedBlock.id ? updatedBlock : b));
+            if ('align' in updates || 'fontSize' in updates || 'bold' in updates || 'marginTop' in updates || 'marginBottom' in updates || 'height' in updates) {
+                return { ...b, styles: { ...b.styles, ...updates } };
+            }
+            return { ...b, ...updates };
+        }));
     };
 
     const removeBlock = (id: string) => {
         setBlocks(blocks.filter(b => b.id !== id));
-        if (selectedBlock?.id === id) setSelectedBlock(null);
+        if (selectedId === id) setSelectedId(null);
     };
 
     return (
@@ -207,8 +209,8 @@ export const LabelDesigner: React.FC = () => {
                                         key={block.id}
                                         block={block}
                                         onRemove={removeBlock}
-                                        onEdit={setSelectedBlock}
-                                        isSelected={selectedBlock?.id === block.id}
+                                        onEdit={(b: any) => setSelectedId(b.id)}
+                                        isSelected={selectedId === block.id}
                                     />
                                 ))}
                             </SortableContext>
@@ -219,43 +221,43 @@ export const LabelDesigner: React.FC = () => {
 
             {/* MIDDLE: Preview Canvas */}
             <div className="flex-1 bg-gray-100 dark:bg-gray-900 flex justify-center items-center p-8 overflow-y-auto">
-                {/* 50mm x 25mm Label Scaling x3 for visibility (150mm x 75mm approx on screen) */}
                 <div
                     className="bg-white text-black shadow-lg relative overflow-hidden flex flex-col"
                     style={{
-                        // Real 50mm is ~189px at 96dpi. Let's do 2x scale
                         width: '380px',
                         height: '190px',
                         padding: '10px',
                         fontFamily: 'Arial, sans-serif'
                     }}
                 >
-                    {/* Scale Wrapper for Preview Accuracy if needed, but linear stack is fine */}
                     {blocks.map(block => (
                         <div
                             key={block.id}
-                            onClick={() => setSelectedBlock(block)}
-                            className={`cursor-pointer hover:bg-blue-500/10 ${selectedBlock?.id === block.id ? 'ring-1 ring-blue-500' : ''}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedId(block.id);
+                            }}
+                            className={`cursor-pointer hover:bg-blue-500/10 ${selectedId === block.id ? 'ring-1 ring-blue-500' : ''}`}
                             style={{
                                 textAlign: block.styles.align,
-                                fontSize: `${(block.styles.fontSize || 10) * 2}px`, // Visual scale 2x
+                                fontSize: `${(block.styles.fontSize || 10) * 2}px`,
                                 fontWeight: block.styles.bold ? 'bold' : 'normal',
                                 marginTop: `${(block.styles.marginTop || 0) * 2}px`,
                                 marginBottom: `${(block.styles.marginBottom || 0) * 2}px`,
                                 display: block.visible ? 'block' : 'none',
-                                lineHeight: 1.2
+                                lineHeight: 1.1
                             }}
                         >
-                            {block.type === 'shop_name' && (shopDetails.shopName || "ZAIN GENTS PALACE")}
-                            {block.type === 'product_name' && "Mens Polo Shirt XL"}
-                            {block.type === 'price' && "Rs. 499.00"}
+                            {block.type === 'shop_name' && (block.content || shopDetails.shopName || "ZAIN GENTS PALACE")}
+                            {block.type === 'product_name' && (block.content || "Shirt 750")}
+                            {block.type === 'price' && "Rs.750.00"}
                             {block.type === 'product_code' && "ABC-1234"}
-                            {block.type === 'text' && (block.content || 'Text')}
-                            {block.type === 'barcode' && <div className="bg-gray-200 w-full flex items-center justify-center text-[10px]" style={{ height: (block.styles.height || 30) * 1.5 }}>||| |||| || ||||</div>}
+                            {block.type === 'text' && (block.content || '4649350')}
+                            {block.type === 'barcode' && <div className="bg-gray-200 w-full flex items-center justify-center text-[10px]" style={{ height: (block.styles.height || 30) * 1.5 }}>|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||</div>}
                             {block.type === 'meta_row' && (
                                 <div className="flex justify-between w-full">
-                                    <span>ABC-123</span>
-                                    <span>Rs. 499.00</span>
+                                    <span>4649350</span>
+                                    <span>Rs.750.00</span>
                                 </div>
                             )}
                             {block.type === 'divider' && <div className="border-t border-black my-1"></div>}
@@ -270,19 +272,17 @@ export const LabelDesigner: React.FC = () => {
             <div className="w-72 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold">Properties</h3>
-                    <Button size="sm" variant="secondary" onClick={handleReset} title="Reset to Default" className="mr-2">
-                        <RotateCcw className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" onClick={handleSave} disabled={saving}>
-                        {saving ? 'Saving...' : 'Save Layout'}
-                    </Button>
+                    <div className="flex gap-1">
+                        <Button size="sm" variant="secondary" onClick={handleReset} title="Reset to Default"><RotateCcw className="w-4 h-4" /></Button>
+                        <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Layout'}</Button>
+                    </div>
                 </div>
 
-                {selectedBlock ? (
+                {selectedId && selectedBlock ? (
                     <div className="space-y-4">
                         <div>
                             <label className="text-xs font-bold text-gray-500 uppercase">Type</label>
-                            <div className="font-mono text-sm">{selectedBlock.type}</div>
+                            <div className="font-mono text-sm capitalize">{selectedBlock.type.replace('_', ' ')}</div>
                         </div>
 
                         {/* Alignment */}
@@ -312,10 +312,14 @@ export const LabelDesigner: React.FC = () => {
                         </div>
 
                         {/* Custom Text Content */}
-                        {selectedBlock.type === 'text' && (
+                        {(selectedBlock.type === 'text' || selectedBlock.type === 'shop_name' || selectedBlock.type === 'product_name') && (
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase">Content</label>
-                                <Input value={selectedBlock.content} onChange={(e) => updateSelectedBlock({ content: e.target.value })} />
+                                <Input
+                                    value={selectedBlock.content || ''}
+                                    placeholder={selectedBlock.type === 'shop_name' ? shopDetails.shopName : ''}
+                                    onChange={(e) => updateSelectedBlock({ content: e.target.value })}
+                                />
                             </div>
                         )}
 
@@ -347,7 +351,7 @@ export const LabelDesigner: React.FC = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="text-center text-gray-400 mt-10">Select a block</div>
+                    <div className="text-center text-gray-400 mt-10">Select a block to edit</div>
                 )}
             </div>
         </div>
