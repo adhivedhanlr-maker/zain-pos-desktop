@@ -17,7 +17,7 @@ export default defineConfig({
                     build: {
                         outDir: 'dist-electron',
                         rollupOptions: {
-                            external: ['electron', 'prisma', '@prisma/client', 'usb-detection']
+                            external: ['electron', 'prisma', '@prisma/client', 'usb-detection', '../prisma/generated/client']
                         }
                     }
                 }

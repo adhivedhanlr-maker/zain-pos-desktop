@@ -81,7 +81,12 @@
           ]
         }
       ],
-      "icon": "public/icon.png"
+      "icon": "public/icon.png",
+      "asarUnpack": [
+        "node_modules/.prisma",
+        "node_modules/@prisma/engines",
+        "prisma/generated/client"
+      ]
     },
     "nsis": {
       "oneClick": false,
