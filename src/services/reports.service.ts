@@ -24,11 +24,11 @@ export const reportsService = {
             },
         });
 
-        const totalSales = sales.reduce((sum, sale) => sum + sale.grandTotal, 0);
-        const totalTax = sales.reduce((sum, sale) => sum + sale.taxAmount, 0);
-        const totalDiscount = sales.reduce((sum, sale) => sum + sale.discount, 0);
+        const totalSales = sales.reduce((sum: number, sale: any) => sum + sale.grandTotal, 0);
+        const totalTax = sales.reduce((sum: number, sale: any) => sum + sale.taxAmount, 0);
+        const totalDiscount = sales.reduce((sum: number, sale: any) => sum + sale.discount, 0);
 
-        const paymentBreakdown = sales.reduce((acc, sale) => {
+        const paymentBreakdown = sales.reduce((acc: any, sale: any) => {
             acc[sale.paymentMethod] = (acc[sale.paymentMethod] || 0) + sale.grandTotal;
             return acc;
         }, {} as Record<string, number>);
@@ -61,12 +61,12 @@ export const reportsService = {
             },
         });
 
-        const totalSales = sales.reduce((sum, sale) => sum + sale.grandTotal, 0);
-        const totalTax = sales.reduce((sum, sale) => sum + sale.taxAmount, 0);
-        const totalDiscount = sales.reduce((sum, sale) => sum + sale.discount, 0);
+        const totalSales = sales.reduce((sum: number, sale: any) => sum + sale.grandTotal, 0);
+        const totalTax = sales.reduce((sum: number, sale: any) => sum + sale.taxAmount, 0);
+        const totalDiscount = sales.reduce((sum: number, sale: any) => sum + sale.discount, 0);
 
         // Daily breakdown
-        const dailyBreakdown = sales.reduce((acc, sale) => {
+        const dailyBreakdown = sales.reduce((acc: any, sale: any) => {
             const day = new Date(sale.createdAt).getDate();
             if (!acc[day]) {
                 acc[day] = { sales: 0, count: 0 };

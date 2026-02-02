@@ -1,5 +1,5 @@
 {
-  "name": "zain-pos",
+  "name": "zain-pos-v3",
   "version": "1.0.0",
   "description": "Zain Gents Palace - Point of Sale System",
   "main": "dist-electron/main.js",
@@ -11,7 +11,7 @@
     "build": "tsc && vite build && electron-builder",
     "build:win": "npm run build",
     "preview": "vite preview",
-    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:dev": "vite",
     "electron:build": "vite build && electron-builder",
     "postinstall": "prisma generate",
     "import": "ts-node scripts/import-from-excel.ts"
@@ -61,7 +61,7 @@
   },
   "build": {
     "appId": "com.zaingentspalace.pos",
-    "productName": "Zain POS",
+    "productName": "Zain-POS-V3",
     "directories": {
       "output": "release"
     },
@@ -69,6 +69,7 @@
       "dist/**/*",
       "dist-electron/**/*",
       "prisma/**/*",
+      "public/**/*",
       "node_modules/**/*",
       "package.json"
     ],

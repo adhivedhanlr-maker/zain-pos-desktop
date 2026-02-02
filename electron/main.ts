@@ -1,9 +1,28 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
-import { PrismaClient } from '../prisma/generated/client';
 
-let prisma: PrismaClient;
+// Global error handling - MUST BE FIRST
+process.on('uncaughtException', (error) => {
+    dialog.showErrorBox('Main Process Error', error.stack || error.message);
+});
+// Custom Prisma Import for Production
+let PrismaClient: any;
+try {
+    const isPackaged = app.isPackaged;
+    if (isPackaged) {
+        // In production, load from the unpacked resources folder
+        const clientPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'prisma', 'generated', 'client');
+        PrismaClient = require(clientPath).PrismaClient;
+    } else {
+        // In development, load from the local generated folder
+        PrismaClient = require('../prisma/generated/client').PrismaClient;
+    }
+} catch (err) {
+    console.error('Failed to load Prisma Client:', err);
+}
+
+let prisma: any; // Type as any to avoid TS errors with dynamic require
 
 function getDatabasePath() {
     const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
@@ -58,24 +77,50 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 function createWindow() {
     mainWindow = new BrowserWindow({
+        title: "!!! ZAIN POS FIXED V3 !!!",
         width: 1400,
         height: 900,
         minWidth: 1200,
         minHeight: 700,
+        backgroundColor: '#FFA500', // ORANGE BACKGROUND
         webPreferences: {
+            contextIsolation: true,
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
-            contextIsolation: true,
+            sandbox: false,
         },
         autoHideMenuBar: true,
-        icon: path.join(__dirname, '../public/icon.png'),
+        icon: fs.existsSync(path.join(__dirname, '../public/icon.png'))
+            ? path.join(__dirname, '../public/icon.png')
+            : undefined,
+    });
+
+    // Add deep debugging listeners
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+        dialog.showErrorBox('Renderer Load Failed',
+            `Code: ${errorCode}\nDescription: ${errorDescription}\nURL: ${validatedURL}`);
+    });
+
+    mainWindow.webContents.on('crashed', () => {
+        dialog.showErrorBox('Renderer Crashed', 'The renderer process has crashed.');
     });
 
     if (isDev) {
         mainWindow.loadURL('http://localhost:5173');
         mainWindow.webContents.openDevTools();
     } else {
-        mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+        const indexPath = path.join(__dirname, '../dist/index.html');
+
+        // Open DevTools BEFORE loading to catch early errors
+        mainWindow.webContents.openDevTools();
+
+        if (!fs.existsSync(indexPath)) {
+            dialog.showErrorBox('Critical Error', `File not found: ${indexPath}`);
+        }
+
+        mainWindow.loadFile(indexPath).catch(err => {
+            dialog.showErrorBox('Load Error', err.message);
+        });
     }
 
     mainWindow.on('closed', () => {
@@ -84,14 +129,26 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-    initializePrisma();
-    createWindow();
+    try {
+        // FORCE ALERT TO PROVE THIS CODE IS RUNNING
+        dialog.showMessageBoxSync({
+            type: 'info',
+            title: 'Startup Verification',
+            message: 'Zain POS v2 [DEBUG MODE] is now starting. If you do not see the login screen next, please check the dev tools on the right.',
+            buttons: ['OK']
+        });
 
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            createWindow();
-        }
-    });
+        initializePrisma();
+        createWindow();
+
+        app.on('activate', () => {
+            if (BrowserWindow.getAllWindows().length === 0) {
+                createWindow();
+            }
+        });
+    } catch (err: any) {
+        dialog.showErrorBox('Startup Error', err.stack || err.message);
+    }
 });
 
 app.on('window-all-closed', () => {
@@ -205,7 +262,8 @@ ipcMain.handle('print:label', async (_event, data) => {
     });
 });
 
-// USB device detection
+// Global error handling was moved to the top
+
 ipcMain.handle('devices:list', async () => {
     try {
         // Will be implemented with usb-detection

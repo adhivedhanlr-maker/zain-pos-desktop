@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { reportsService } from '../services/reports.service';
 import { Loading } from '../components/ui/Loading';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
 
 export const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
