@@ -1,8 +1,57 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
+import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+let prisma: PrismaClient;
+
+function getDatabasePath() {
+    const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+    if (isDev) {
+        return path.join(process.cwd(), 'prisma', 'pos.db');
+    }
+
+    const userDataPath = app.getPath('userData');
+    const dbPath = path.join(userDataPath, 'pos.db');
+
+    // Legacy migration: check if DB exists in app root (old way) and move to AppData
+    const legacyPath = path.join(process.resourcesPath || __dirname, '..', 'prisma', 'pos.db');
+    const legacyPathAlt = path.join(process.cwd(), 'prisma', 'pos.db');
+
+    if (!fs.existsSync(dbPath)) {
+        if (fs.existsSync(legacyPath)) {
+            try {
+                fs.copyFileSync(legacyPath, dbPath);
+                console.log('Migrated database from legacy path:', legacyPath);
+            } catch (err) {
+                console.error('Failed to migrate database:', err);
+            }
+        } else if (fs.existsSync(legacyPathAlt)) {
+            try {
+                fs.copyFileSync(legacyPathAlt, dbPath);
+                console.log('Migrated database from local path:', legacyPathAlt);
+            } catch (err) {
+                console.error('Failed to migrate database:', err);
+            }
+        }
+    }
+
+    return dbPath;
+}
+
+function initializePrisma() {
+    const dbPath = getDatabasePath();
+    console.log('Initializing database at:', dbPath);
+
+    prisma = new PrismaClient({
+        datasources: {
+            db: {
+                url: `file:${dbPath}`
+            }
+        }
+    });
+}
 let mainWindow: BrowserWindow | null = null;
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
@@ -35,6 +84,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+    initializePrisma();
     createWindow();
 
     app.on('activate', () => {
