@@ -11,15 +11,44 @@ let PrismaClient: any;
 try {
     const isPackaged = app.isPackaged;
     if (isPackaged) {
-        // In production, load from the unpacked resources folder
-        const clientPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'prisma', 'generated', 'client');
-        PrismaClient = require(clientPath).PrismaClient;
+        // Load from external resources folder (manual copy strategy)
+        const clientPath = path.join(process.resourcesPath, 'prisma-client', 'client');
+
+        console.log('Loading Prisma from:', clientPath);
+        const prismaModule = require(clientPath);
+        console.log('Loaded module keys:', Object.keys(prismaModule));
+
+        // Robust extraction: Handle named export or default export
+        PrismaClient = prismaModule.PrismaClient || prismaModule.default?.PrismaClient || prismaModule;
+
+        // Verify if it is a constructor (class/function)
+        const typeStr = typeof PrismaClient;
+        const isFunc = typeStr === 'function';
+
+        // Use a synchronous dialog to FORCE the user to see what we loaded
+        // This is critical for the "u is not a constructor" debugging
+        dialog.showMessageBoxSync({
+            type: isFunc ? 'info' : 'error',
+            title: 'Prisma Debug Check',
+            message: `Loaded PrismaClient Type: ${typeStr}\nIs Constructor? ${isFunc}\nKeys: ${Object.keys(prismaModule).join(', ')}\nPath: ${clientPath}`
+        });
+
+        if (!isFunc) {
+            console.error('PrismaClient is not a function!', PrismaClient);
+            // Verify if it's nested one level deeper?
+            if (prismaModule.exports && prismaModule.exports.PrismaClient) {
+                PrismaClient = prismaModule.exports.PrismaClient;
+                dialog.showMessageBoxSync({ type: 'info', message: 'Found PrismaClient in .exports!' });
+            }
+        }
+
     } else {
         // In development, load from the local generated folder
         PrismaClient = require('../prisma/generated/client').PrismaClient;
     }
 } catch (err) {
     console.error('Failed to load Prisma Client:', err);
+    dialog.showErrorBox('Prisma Load Error', 'Failed to load database client:\n' + (err instanceof Error ? err.stack : String(err)));
 }
 
 let prisma: any; // Type as any to avoid TS errors with dynamic require
@@ -34,25 +63,24 @@ function getDatabasePath() {
     const userDataPath = app.getPath('userData');
     const dbPath = path.join(userDataPath, 'pos.db');
 
-    // Legacy migration: check if DB exists in app root (old way) and move to AppData
-    const legacyPath = path.join(process.resourcesPath || __dirname, '..', 'prisma', 'pos.db');
-    const legacyPathAlt = path.join(process.cwd(), 'prisma', 'pos.db');
+    // In production, the DB is copied to the resources folder via extraResources
+    const resourcePath = path.join(process.resourcesPath, 'pos.db');
 
     if (!fs.existsSync(dbPath)) {
-        if (fs.existsSync(legacyPath)) {
+        console.log('Database not found at', dbPath);
+
+        if (fs.existsSync(resourcePath)) {
             try {
-                fs.copyFileSync(legacyPath, dbPath);
-                console.log('Migrated database from legacy path:', legacyPath);
+                console.log('Copying database from resources:', resourcePath);
+                fs.copyFileSync(resourcePath, dbPath);
+                console.log('Database copied successfully.');
             } catch (err) {
-                console.error('Failed to migrate database:', err);
+                console.error('Failed to copy database from resources:', err);
+                dialog.showErrorBox('Database Error', 'Failed to initialize database. Please contact support.');
             }
-        } else if (fs.existsSync(legacyPathAlt)) {
-            try {
-                fs.copyFileSync(legacyPathAlt, dbPath);
-                console.log('Migrated database from local path:', legacyPathAlt);
-            } catch (err) {
-                console.error('Failed to migrate database:', err);
-            }
+        } else {
+            console.error('Critical: Resource database not found at', resourcePath);
+            dialog.showErrorBox('Critical Error', 'Database file missing from installation. Please reinstall.');
         }
     }
 

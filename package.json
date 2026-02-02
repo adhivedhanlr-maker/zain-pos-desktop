@@ -65,6 +65,16 @@
     "directories": {
       "output": "release"
     },
+    "extraResources": [
+      {
+        "from": "prisma/pos.db",
+        "to": "pos.db"
+      },
+      {
+        "from": "prisma/generated",
+        "to": "prisma-client"
+      }
+    ],
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
@@ -85,8 +95,7 @@
       "icon": "public/icon.png",
       "asarUnpack": [
         "node_modules/.prisma",
-        "node_modules/@prisma/engines",
-        "prisma/generated/client"
+        "node_modules/@prisma/engines"
       ]
     },
     "nsis": {

@@ -17,6 +17,7 @@ export default defineConfig({
                 vite: {
                     build: {
                         outDir: 'dist-electron',
+                        minify: false,
                         rollupOptions: {
                             external: ['electron', 'prisma', '@prisma/client', 'usb-detection', '../prisma/generated/client']
                         }
