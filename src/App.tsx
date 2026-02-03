@@ -8,6 +8,8 @@ import { Customers } from './pages/Customers';
 import { Sales } from './pages/Sales';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
+import { ActivityPage } from './pages/Activity';
+import { Users } from './pages/Users';
 import { MainLayout } from './components/Layout/MainLayout';
 import { useAuthStore } from './store/authStore';
 
@@ -36,6 +38,8 @@ function App() {
                     <Route path="sales" element={<Sales />} />
                     <Route path="reports" element={<Reports />} />
                     <Route path="settings" element={<Settings />} />
+                    <Route path="users" element={<Users />} />
+                    <Route path="activity" element={<ActivityPage />} />
                 </Route>
             </Routes>
         </HashRouter>

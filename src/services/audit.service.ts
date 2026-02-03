@@ -1,6 +1,8 @@
 // import { db } from '../lib/db'; // Unused in renderer
 export type AuditAction =
     | 'SALE_VOID'
+    | 'SALE_CREATE'
+    | 'SALE_UPDATE'
     | 'STOCK_ADD'
     | 'STOCK_ADJUST'
     | 'PRODUCT_DELETE'

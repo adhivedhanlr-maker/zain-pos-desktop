@@ -16,7 +16,12 @@ export const authService = {
                 throw new Error('User account is disabled');
             }
 
-            const isValidPassword = await bcrypt.compare(password, user.password);
+            // Check Plain Text first, then Hash
+            let isValidPassword = password === user.password;
+            if (!isValidPassword) {
+                isValidPassword = await bcrypt.compare(password, user.password);
+            }
+
             if (!isValidPassword) {
                 throw new Error('Invalid username or password');
             }
@@ -35,13 +40,9 @@ export const authService = {
         name: string;
         role: string;
     }) {
-        const hashedPassword = await bcrypt.hash(data.password, 10);
-
+        // Plain text password storage (Requested by User)
         return db.users.create({
-            data: {
-                ...data,
-                password: hashedPassword,
-            },
+            data: data
         });
     },
 
@@ -52,16 +53,19 @@ export const authService = {
             throw new Error('User not found');
         }
 
-        const isValidPassword = await bcrypt.compare(oldPassword, user.password);
+        // Check Plain Text first, then Hash
+        let isValidPassword = oldPassword === user.password;
+        if (!isValidPassword) {
+            isValidPassword = await bcrypt.compare(oldPassword, user.password);
+        }
+
         if (!isValidPassword) {
             throw new Error('Invalid current password');
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-
         return db.users.update({
             where: { id: userId },
-            data: { password: hashedPassword },
+            data: { password: newPassword },
         });
     },
 };

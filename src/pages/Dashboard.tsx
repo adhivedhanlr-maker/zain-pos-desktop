@@ -59,22 +59,23 @@ export const Dashboard: React.FC = () => {
             setLowStockItems(lowStock);
             setTopProducts(topSelling);
 
-            // Get all-time stats
-            const allSales = await db.sales.findMany({
-                select: {
-                    grandTotal: true,
-                    items: true,
-                },
-            });
-
-            const totalRevenue = allSales.reduce((sum: number, sale: any) => sum + sale.grandTotal, 0);
-            const totalItems = allSales.reduce((sum: number, sale: any) =>
-                sum + sale.items.reduce((itemSum: number, item: any) => itemSum + item.quantity, 0), 0);
+            // Get all-time stats (Optimized)
+            const [salesAgg, itemsAgg] = await Promise.all([
+                db.sales.aggregate({
+                    where: { status: 'COMPLETED' },
+                    _sum: { grandTotal: true },
+                    _count: { id: true }
+                }),
+                db.saleItems.aggregate({
+                    where: { sale: { status: 'COMPLETED' } },
+                    _sum: { quantity: true }
+                })
+            ]);
 
             setAllTimeStats({
-                totalRevenue,
-                totalItems,
-                totalSales: allSales.length,
+                totalRevenue: salesAgg._sum.grandTotal || 0,
+                totalItems: itemsAgg._sum.quantity || 0,
+                totalSales: salesAgg._count.id || 0,
             });
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
@@ -165,6 +166,7 @@ export const Dashboard: React.FC = () => {
             } else if (filterPeriod === 'all') {
                 // Show all-time data grouped by month
                 const allSales = await db.sales.findMany({
+                    where: { status: 'COMPLETED' },
                     select: {
                         createdAt: true,
                         grandTotal: true,
@@ -283,8 +285,8 @@ export const Dashboard: React.FC = () => {
                         <div key={index} className="stat-card">
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <p className="stat-label">{stat.label}</p>
-                                    <p className="stat-value mt-2">{stat.value}</p>
+                                    <p className="stat-label truncate">{stat.label}</p>
+                                    <p className="stat-value mt-2 truncate text-xl lg:text-2xl" title={String(stat.value)}>{stat.value}</p>
                                     {stat.change && (
                                         <div className="flex items-center gap-1 mt-1">
                                             {stat.change.isIncrease ? (

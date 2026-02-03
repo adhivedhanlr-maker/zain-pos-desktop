@@ -61,7 +61,13 @@ class DatabaseService {
         create: (args: any) => this.query('sale', 'create', args),
         update: (args: any) => this.query('sale', 'update', args),
         delete: (args: any) => this.query('sale', 'delete', args),
-        deleteMany: (args: any) => this.query('sale', 'deleteMany', args),
+        aggregate: (args: any) => this.query('sale', 'aggregate', args),
+        groupBy: (args: any) => this.query('sale', 'groupBy', args),
+    };
+
+    // Sale Item operations
+    saleItems = {
+        aggregate: (args: any) => this.query('saleItem', 'aggregate', args),
     };
 
     // Inventory operations

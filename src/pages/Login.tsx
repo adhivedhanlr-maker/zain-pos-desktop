@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, User, Lock } from 'lucide-react';
 import { Input } from '../components/ui/Input';
@@ -11,9 +11,26 @@ export const Login: React.FC = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [users, setUsers] = useState<any[]>([]);
 
     const navigate = useNavigate();
     const login = useAuthStore((state) => state.login);
+
+    useEffect(() => {
+        const loadUsers = async () => {
+            try {
+                // @ts-ignore
+                const res = await window.electronAPI.users.list();
+                if (res.success) {
+                    setUsers(res.data);
+                    if (res.data.length > 0) setUsername(res.data[0].username);
+                }
+            } catch (e) {
+                console.error("Failed to load users", e);
+            }
+        };
+        loadUsers();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -54,18 +71,29 @@ export const Login: React.FC = () => {
                             </div>
                         )}
 
-                        <div className="relative">
-                            <User className="absolute left-3 top-9 w-5 h-5 text-gray-400" />
-                            <Input
-                                label="Username"
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Enter your username"
-                                className="pl-10"
-                                required
-                                autoFocus
-                            />
+                        <div className="space-y-1">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Select User
+                            </label>
+                            <div className="relative">
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                                <select
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all appearance-none"
+                                    required
+                                >
+                                    <option value="" disabled>Select a user</option>
+                                    {users.map((u) => (
+                                        <option key={u.id} value={u.username}>
+                                            {u.name} ({u.role})
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="relative">

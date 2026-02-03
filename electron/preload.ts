@@ -5,12 +5,22 @@ const api = {
     db: {
         query: (args: { model: string, method: string, args?: any }) =>
             ipcRenderer.invoke('db:query', args),
+        backup: () => ipcRenderer.invoke('db:backup'),
+        restore: () => ipcRenderer.invoke('db:restore'),
+        configureBackup: (config: any) => ipcRenderer.invoke('backup:configure', config),
     },
 
     // Settings
     settings: {
         get: (key: string) => ipcRenderer.invoke('settings:get', key),
         set: (key: string, value: string) => ipcRenderer.invoke('settings:set', key, value),
+    },
+
+    // Data Management (Import/Export)
+    data: {
+        downloadProductTemplate: () => ipcRenderer.invoke('products:importTemplate'), // Maps to products:importTemplate
+        importProducts: () => ipcRenderer.invoke('products:import'),          // Maps to products:import
+        exportAll: () => ipcRenderer.invoke('data:exportAll'),                // Maps to data:exportAll
     },
 
     // Sales
@@ -22,6 +32,15 @@ const api = {
     print: {
         receipt: (data: any) => ipcRenderer.invoke('print:receipt', data),
         label: (data: any) => ipcRenderer.invoke('print:label', data),
+    },
+
+    // Users
+    users: {
+        list: () => ipcRenderer.invoke('users:list'),
+        create: (data: any) => ipcRenderer.invoke('users:create', data),
+        update: (id: string, data: any) => ipcRenderer.invoke('users:update', { id, data }),
+        changePassword: (id: string, password: string) => ipcRenderer.invoke('users:changePassword', { id, password }),
+        delete: (id: string) => ipcRenderer.invoke('users:delete', id),
     },
 
     // Devices

@@ -103,12 +103,12 @@ export const StickerPrintModal: React.FC<StickerPrintModalProps> = ({
 
     // Render barcode for preview
     useEffect(() => {
-        if (isOpen && variant?.sku && layout.some(b => b.type === 'barcode' && b.visible)) {
+        if (isOpen && (variant?.barcode || variant?.sku) && layout.some(b => b.type === 'barcode' && b.visible)) {
             // Use setTimeout to ensure DOM is updated
             setTimeout(() => {
                 try {
                     document.querySelectorAll('.preview-barcode').forEach((element) => {
-                        JsBarcode(element, variant.sku, {
+                        JsBarcode(element, variant.barcode || variant.sku, {
                             format: 'CODE128',
                             width: 1.5,
                             height: 40,
@@ -155,11 +155,11 @@ export const StickerPrintModal: React.FC<StickerPrintModalProps> = ({
             case 'text':
                 return <div key={block.id} style={style}>{block.content}</div>;
             case 'product_code':
-                return <div key={block.id} style={style}>{variant.sku}</div>;
+                return <div key={block.id} style={style}>{variant.barcode || variant.sku}</div>;
             case 'meta_row':
                 return (
                     <div key={block.id} style={{ ...style, display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{variant.sku}</span>
+                        <span>{variant.barcode || variant.sku}</span>
                         <span>{formatIndianCurrency(variant.sellingPrice)}</span>
                     </div>
                 );
@@ -288,7 +288,7 @@ export const StickerPrintModal: React.FC<StickerPrintModalProps> = ({
                         // Generate barcodes for each sticker
                          document.querySelectorAll('.barcode-svg').forEach(svg => {
                              const height = svg.getAttribute('data-height');
-                            JsBarcode(svg, '${variant.sku}', {
+                            JsBarcode(svg, '${variant.barcode || variant.sku}', {
                                 format: 'CODE128',
                                 width: 1.5,
                                 height: parseInt(height) || 30,

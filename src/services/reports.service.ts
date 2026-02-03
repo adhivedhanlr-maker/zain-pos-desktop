@@ -9,6 +9,7 @@ export const reportsService = {
 
         const sales = await db.sales.findMany({
             where: {
+                status: 'COMPLETED',
                 createdAt: {
                     gte: start.toISOString(),
                     lte: end.toISOString(),
@@ -58,6 +59,7 @@ export const reportsService = {
 
         const sales = await db.sales.findMany({
             where: {
+                status: 'COMPLETED',
                 createdAt: {
                     gte: start.toISOString(),
                     lte: end.toISOString(),
@@ -96,7 +98,9 @@ export const reportsService = {
 
     // Get top selling products
     async getTopSellingProducts(limit: number = 10, startDate?: Date, endDate?: Date) {
-        const whereClause: any = {};
+        const whereClause: any = {
+            sale: { status: 'COMPLETED' }
+        };
 
         if (startDate && endDate) {
             whereClause.createdAt = {

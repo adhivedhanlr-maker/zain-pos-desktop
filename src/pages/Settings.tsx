@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Trash2 } from 'lucide-react';
+import { Save, Trash2, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { ReceiptDesigner } from '../components/settings/ReceiptDesigner';
@@ -27,6 +27,11 @@ export const Settings: React.FC = () => {
         showRate: false, // Default hidden per user request
     });
 
+    const [backupConfig, setBackupConfig] = useState({
+        enabled: true,
+        intervalMinutes: 0 // 0 = On Close
+    });
+
     useEffect(() => {
         loadSettings();
     }, []);
@@ -51,6 +56,16 @@ export const Settings: React.FC = () => {
             });
             if (printerResult.success && printerResult.data && printerResult.data.value) {
                 setPrinterSettings({ ...printerSettings, ...JSON.parse(printerResult.data.value) });
+            }
+
+            // Load Backup Config
+            const backupResult = await window.electronAPI.db.query({
+                model: 'setting',
+                method: 'findUnique',
+                args: { where: { key: 'BACKUP_CONFIG' } }
+            });
+            if (backupResult.success && backupResult.data && backupResult.data.value) {
+                setBackupConfig(JSON.parse(backupResult.data.value));
             }
         } catch (error) {
             console.error('Failed to load settings:', error);
@@ -95,6 +110,18 @@ export const Settings: React.FC = () => {
         } catch (error) {
             console.error('Failed to save settings:', error);
             alert('Failed to save settings');
+        }
+    };
+
+    const handleSaveBackupConfig = async () => {
+        try {
+            // We'll expose this in preload next
+            const res = await (window as any).electronAPI.db.configureBackup(backupConfig);
+            if (res.success) alert('Backup configuration updated!');
+            else alert('Failed to update backup config');
+        } catch (e) {
+            console.error(e);
+            alert('Error saving backup config');
         }
     };
 
@@ -224,113 +251,222 @@ export const Settings: React.FC = () => {
 
             <div className="card">
                 <h3 className="text-xl font-bold mb-6">Database Management</h3>
-                <div className="space-y-4">
-                    <p className="text-gray-600 dark:text-gray-400">
-                        Backup and restore your database to prevent data loss.
-                    </p>
-                    <div className="flex gap-2">
-                        <Button variant="primary">Backup Database</Button>
-                        <Button variant="secondary">Restore Database</Button>
+
+                {/* Auto Backup Settings */}
+                <div className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <h4 className="font-semibold mb-3">Auto Backup Configuration</h4>
+                    <div className="flex items-center gap-4 mb-4">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500"
+                                checked={backupConfig.enabled}
+                                onChange={(e) => setBackupConfig({ ...backupConfig, enabled: e.target.checked })}
+                            />
+                            <span className="font-medium">Enable Auto Backup</span>
+                        </label>
                     </div>
-                </div>
 
-                <div className="card">
-                    <h3 className="text-xl font-bold mb-6">Thermal Printer Settings</h3>
-                    <div className="space-y-6">
-
-                        {/* Paper Size Selection */}
-                        <div>
-                            <label className="label">Paper Size</label>
-                            <div className="flex gap-4 mb-2">
-                                <button
-                                    className={`px-4 py-2 rounded border ${printerSettings.pageSize === '80mm' ? 'bg-primary-50 border-primary-500 text-primary-700 font-bold' : 'bg-white border-gray-300'}`}
-                                    onClick={() => setPrinterSettings({ ...printerSettings, pageSize: '80mm', contentWidth: 72 })}
-                                >
-                                    3 Inch (80mm)
-                                </button>
-                                <button
-                                    className={`px-4 py-2 rounded border ${printerSettings.pageSize === '58mm' ? 'bg-primary-50 border-primary-500 text-primary-700 font-bold' : 'bg-white border-gray-300'}`}
-                                    onClick={() => setPrinterSettings({ ...printerSettings, pageSize: '58mm', contentWidth: 48 })}
-                                >
-                                    2 Inch (58mm)
-                                </button>
-                                <button
-                                    className={`px-4 py-2 rounded border ${printerSettings.pageSize === 'custom' ? 'bg-primary-50 border-primary-500 text-primary-700 font-bold' : 'bg-white border-gray-300'}`}
-                                    onClick={() => setPrinterSettings({ ...printerSettings, pageSize: 'custom' })}
-                                >
-                                    Custom
-                                </button>
-                            </div>
-                            {printerSettings.pageSize === 'custom' && (
-                                <div className="flex items-center gap-2 max-w-xs">
-                                    <span className="text-sm text-gray-500">Width (mm):</span>
-                                    <Input
-                                        type="number"
-                                        value={printerSettings.contentWidth}
-                                        onChange={(e) => setPrinterSettings({ ...printerSettings, contentWidth: parseInt(e.target.value) || 72 })}
-                                    />
-                                </div>
-                            )}
-                            <p className="text-xs text-gray-400 mt-1">Standard content width: 72mm for 80mm paper, 48mm for 58mm paper.</p>
-                        </div>
-
-                        {/* Font Settings */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="label">Font Style</label>
-                                <select
-                                    className="input"
-                                    value={printerSettings.fontFamily}
-                                    onChange={(e) => setPrinterSettings({ ...printerSettings, fontFamily: e.target.value })}
-                                >
-                                    <option value="sans-serif">Clean (Sans-Serif)</option>
-                                    <option value="monospace">Classic (Courier/Dot Matrix)</option>
-                                </select>
-                            </div>
-                            <div className="flex items-center">
-                                <label className="flex items-center gap-2 cursor-pointer mt-6 select-none">
-                                    <input
-                                        type="checkbox"
-                                        className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500"
-                                        checked={printerSettings.isBold}
-                                        onChange={(e) => setPrinterSettings({ ...printerSettings, isBold: e.target.checked })}
-                                    />
-                                    <span className="font-medium">Force Bold Text</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Column Visibility */}
-                        <div>
-                            <label className="label">Table Columns</label>
-                            <div className="flex gap-6 mt-2">
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500"
-                                        checked={printerSettings.showMRP}
-                                        onChange={(e) => setPrinterSettings({ ...printerSettings, showMRP: e.target.checked })}
-                                    />
-                                    <span className="font-medium">Show MRP</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500"
-                                        checked={printerSettings.showRate}
-                                        onChange={(e) => setPrinterSettings({ ...printerSettings, showRate: e.target.checked })}
-                                    />
-                                    <span className="font-medium">Show Rate</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className="pt-2">
-                            <Button variant="primary" onClick={handleSaveShopSettings}>
-                                <Save className="w-5 h-5 mr-2" />
-                                Update Print Settings
+                    {backupConfig.enabled && (
+                        <div className="flex items-center gap-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <select
+                                className="input max-w-xs"
+                                value={backupConfig.intervalMinutes}
+                                onChange={(e) => setBackupConfig({ ...backupConfig, intervalMinutes: parseInt(e.target.value) })}
+                            >
+                                <option value="0">On App Close Only</option>
+                                <option value="60">Every 1 Hour</option>
+                                <option value="240">Every 4 Hours</option>
+                                <option value="720">Every 12 Hours</option>
+                                <option value="1440">Daily (24 Hours)</option>
+                            </select>
+                            <Button variant="secondary" onClick={handleSaveBackupConfig}>
+                                Save Interval
                             </Button>
                         </div>
+                    )}
+                </div>
+
+                <div className="space-y-4">
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Manual Backup and restore.
+                    </p>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="primary"
+                            onClick={async () => {
+                                try {
+                                    const res = await window.electronAPI.db.backup();
+                                    if (res.success) alert('Backup saved to: ' + res.path);
+                                    else if (res.error) alert('Error: ' + res.error);
+                                } catch (e) { console.error(e); }
+                            }}
+                        >
+                            Backup Database
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            onClick={async () => {
+                                if (confirm('Restoring will overwrite current data. Continue?')) {
+                                    await window.electronAPI.db.restore();
+                                }
+                            }}
+                        >
+                            Restore Database
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="card">
+                <h3 className="text-xl font-bold mb-6">Data Import / Export (Excel)</h3>
+                <div className="space-y-4">
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Manage your data using Excel spreadsheets.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button
+                            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group"
+                            onClick={async () => {
+                                const res = await window.electronAPI.data.downloadProductTemplate();
+                                if (res.success) alert('Template saved to: ' + res.path);
+                            }}
+                        >
+                            <FileSpreadsheet className="w-8 h-8 text-green-500 mb-3 group-hover:scale-110 transition-transform" />
+                            <span className="font-medium">Download Template</span>
+                            <span className="text-xs text-gray-500 mt-1">For Product Import</span>
+                        </button>
+
+                        <button
+                            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group"
+                            onClick={async () => {
+                                const res = await window.electronAPI.data.importProducts();
+                                if (res.success) {
+                                    const s = res.stats;
+                                    alert(`Import Complete!\nSuccess: ${s.success}\nSkipped: ${s.skipped}\nErrors: ${s.errors}\n\nDetails:\n${s.details.slice(0, 5).join('\n')}`);
+                                } else if (res.error) {
+                                    alert('Import Failed: ' + res.error);
+                                }
+                            }}
+                        >
+                            <Upload className="w-8 h-8 text-blue-500 mb-3 group-hover:scale-110 transition-transform" />
+                            <span className="font-medium">Import Products</span>
+                            <span className="text-xs text-gray-500 mt-1">From Excel File</span>
+                        </button>
+
+                        <button
+                            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors group"
+                            onClick={async () => {
+                                const res = await window.electronAPI.data.exportAll();
+                                if (res.success) alert('Export saved to: ' + res.path);
+                                else if (res.error) alert('Export Failed: ' + res.error);
+                            }}
+                        >
+                            <Download className="w-8 h-8 text-purple-500 mb-3 group-hover:scale-110 transition-transform" />
+                            <span className="font-medium">Export All Data</span>
+                            <span className="text-xs text-gray-500 mt-1">Products, Sales, Customers</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="card">
+                <h3 className="text-xl font-bold mb-6">Thermal Printer Settings</h3>
+                <div className="space-y-6">
+
+                    {/* Paper Size Selection */}
+                    <div>
+                        <label className="label">Paper Size</label>
+                        <div className="flex gap-4 mb-2">
+                            <button
+                                className={`px-4 py-2 rounded border ${printerSettings.pageSize === '80mm' ? 'bg-primary-50 border-primary-500 text-primary-700 font-bold' : 'bg-white border-gray-300'}`}
+                                onClick={() => setPrinterSettings({ ...printerSettings, pageSize: '80mm', contentWidth: 72 })}
+                            >
+                                3 Inch (80mm)
+                            </button>
+                            <button
+                                className={`px-4 py-2 rounded border ${printerSettings.pageSize === '58mm' ? 'bg-primary-50 border-primary-500 text-primary-700 font-bold' : 'bg-white border-gray-300'}`}
+                                onClick={() => setPrinterSettings({ ...printerSettings, pageSize: '58mm', contentWidth: 48 })}
+                            >
+                                2 Inch (58mm)
+                            </button>
+                            <button
+                                className={`px-4 py-2 rounded border ${printerSettings.pageSize === 'custom' ? 'bg-primary-50 border-primary-500 text-primary-700 font-bold' : 'bg-white border-gray-300'}`}
+                                onClick={() => setPrinterSettings({ ...printerSettings, pageSize: 'custom' })}
+                            >
+                                Custom
+                            </button>
+                        </div>
+                        {printerSettings.pageSize === 'custom' && (
+                            <div className="flex items-center gap-2 max-w-xs">
+                                <span className="text-sm text-gray-500">Width (mm):</span>
+                                <Input
+                                    type="number"
+                                    value={printerSettings.contentWidth}
+                                    onChange={(e) => setPrinterSettings({ ...printerSettings, contentWidth: parseInt(e.target.value) || 72 })}
+                                />
+                            </div>
+                        )}
+                        <p className="text-xs text-gray-400 mt-1">Standard content width: 72mm for 80mm paper, 48mm for 58mm paper.</p>
+                    </div>
+
+                    {/* Font Settings */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="label">Font Style</label>
+                            <select
+                                className="input"
+                                value={printerSettings.fontFamily}
+                                onChange={(e) => setPrinterSettings({ ...printerSettings, fontFamily: e.target.value })}
+                            >
+                                <option value="sans-serif">Clean (Sans-Serif)</option>
+                                <option value="monospace">Classic (Courier/Dot Matrix)</option>
+                            </select>
+                        </div>
+                        <div className="flex items-center">
+                            <label className="flex items-center gap-2 cursor-pointer mt-6 select-none">
+                                <input
+                                    type="checkbox"
+                                    className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500"
+                                    checked={printerSettings.isBold}
+                                    onChange={(e) => setPrinterSettings({ ...printerSettings, isBold: e.target.checked })}
+                                />
+                                <span className="font-medium">Force Bold Text</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Column Visibility */}
+                    <div>
+                        <label className="label">Table Columns</label>
+                        <div className="flex gap-6 mt-2">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500"
+                                    checked={printerSettings.showMRP}
+                                    onChange={(e) => setPrinterSettings({ ...printerSettings, showMRP: e.target.checked })}
+                                />
+                                <span className="font-medium">Show MRP</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500"
+                                    checked={printerSettings.showRate}
+                                    onChange={(e) => setPrinterSettings({ ...printerSettings, showRate: e.target.checked })}
+                                />
+                                <span className="font-medium">Show Rate</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="pt-2">
+                        <Button variant="primary" onClick={handleSaveShopSettings}>
+                            <Save className="w-5 h-5 mr-2" />
+                            Update Print Settings
+                        </Button>
                     </div>
                 </div>
             </div>

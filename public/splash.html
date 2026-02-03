@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Zain POS</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+        }
+        .container {
+            text-align: center;
+            animation: fadeIn 1s ease-in;
+        }
+        img {
+            max-width: 400px;
+            max-height: 400px;
+            object-fit: contain;
+            /* Drop shadow for better visibility if needed */
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));
+        }
+        h1 {
+            margin-top: 2rem;
+            color: #333;
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            opacity: 0;
+            animation: slideUp 0.8s ease-out 0.5s forwards;
+        }
+        .loader {
+            margin-top: 20px;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ff6b00; /* Orange accent */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            opacity: 0;
+            animation: spin 1s linear infinite, fadeIn 0.5s ease-out 1s forwards;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Uses relative path assuming files are in same public folder or served correctly -->
+        <img src="icon.jpg" alt="Zain POS Logo" onerror="this.src='icon.png'">
+        <br>
+        <div class="loader"></div>
+        <h1>STARTING SYSTEM...</h1>
+    </div>
+</body>
+</html>

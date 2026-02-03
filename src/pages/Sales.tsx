@@ -3,10 +3,12 @@ import { Printer, Search, Trash2, Filter } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Input } from '../components/ui/Input';
+import { Modal } from '../components/ui/Modal';
 import { db } from '../lib/db';
 import { auditService } from '../services/audit.service';
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { formatIndianCurrency } from '../lib/format';
+import { useAuthStore } from '../store/authStore';
 
 type TimePeriod = 'today' | 'week' | 'month' | 'year' | 'all';
 
@@ -17,6 +19,46 @@ export const Sales: React.FC = () => {
     const [paymentFilter, setPaymentFilter] = useState<string>('all');
     const [showFilters, setShowFilters] = useState(false);
     const [loading, setLoading] = useState(true);
+    const { user } = useAuthStore();
+
+    // Void Modal State
+    const [voidSaleId, setVoidSaleId] = useState<string | null>(null);
+    const [voidReason, setVoidReason] = useState('');
+    const [isVoiding, setIsVoiding] = useState(false);
+
+    const handleVoidClick = (id: string) => {
+        setVoidSaleId(id);
+        setVoidReason('');
+    };
+
+    const confirmVoid = async () => {
+        if (!voidSaleId || !voidReason.trim()) return;
+
+        setIsVoiding(true);
+        try {
+            // Find sale to get billNo for log
+            const sale = sales.find(s => s.id === voidSaleId);
+
+            await db.sales.update({
+                where: { id: voidSaleId },
+                data: { status: 'VOIDED' }
+            });
+
+            await auditService.log(
+                'SALE_VOID',
+                JSON.stringify({ billNo: sale?.billNo || 'Unknown', reason: voidReason }),
+                user?.id
+            );
+
+            loadSales();
+            setVoidSaleId(null);
+        } catch (error: any) {
+            console.error('Failed to void sale:', error);
+            alert(`Failed to void sale: ${error.message || error}`);
+        } finally {
+            setIsVoiding(false);
+        }
+    };
 
     useEffect(() => {
         loadSales();
@@ -76,9 +118,10 @@ export const Sales: React.FC = () => {
         return matchesSearch && matchesTimePeriod && matchesPayment;
     });
 
-    // Calculate summary stats for filtered sales
-    const totalRevenue = filteredSales.reduce((sum, s) => sum + s.grandTotal, 0);
-    const totalBills = filteredSales.length;
+    // Calculate summary stats for filtered sales (excluding VOIDED)
+    const activeSales = filteredSales.filter(s => s.status !== 'VOIDED');
+    const totalRevenue = activeSales.reduce((sum, s) => sum + s.grandTotal, 0);
+    const totalBills = activeSales.length;
 
     return (
         <div className="space-y-6">
@@ -226,21 +269,38 @@ export const Sales: React.FC = () => {
                             ))
                         ) : filteredSales.length > 0 ? (
                             filteredSales.map((sale) => (
-                                <tr key={sale.id}>
+                                <tr key={sale.id} className={sale.status === 'VOIDED' ? 'bg-red-50 dark:bg-red-900/10' : ''}>
                                     <td className="font-medium">
-                                        #{sale.billNo}
-                                        {sale.isHistorical && (
-                                            <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded border border-yellow-200">
-                                                Old Data
-                                            </span>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            #{sale.billNo}
+                                            {sale.status === 'VOIDED' && (
+                                                <span className="text-xs bg-red-100 text-red-800 px-1.5 py-0.5 rounded border border-red-200 font-bold">
+                                                    VOIDED
+                                                </span>
+                                            )}
+                                            {sale.isHistorical && !sale.status && (
+                                                <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded border border-yellow-200">
+                                                    Old Data
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
-                                    <td>{format(new Date(sale.createdAt), 'dd MMM yyyy HH:mm')}</td>
-                                    <td>{sale.customerName || '-'}</td>
-                                    <td>{sale.items.length}</td>
-                                    <td className="font-semibold">{formatIndianCurrency(sale.grandTotal)}</td>
+                                    <td className={sale.status === 'VOIDED' ? 'line-through text-gray-500' : ''}>
+                                        {format(new Date(sale.createdAt), 'dd MMM yyyy HH:mm')}
+                                    </td>
+                                    <td className={sale.status === 'VOIDED' ? 'line-through text-gray-500' : ''}>
+                                        {sale.customerName || '-'}
+                                    </td>
+                                    <td className={sale.status === 'VOIDED' ? 'line-through text-gray-500' : ''}>
+                                        {sale.items.length}
+                                    </td>
+                                    <td className={`font-semibold ${sale.status === 'VOIDED' ? 'line-through text-gray-500' : ''}`}>
+                                        {formatIndianCurrency(sale.grandTotal)}
+                                    </td>
                                     <td>
-                                        <span className="badge badge-info">{sale.paymentMethod}</span>
+                                        <span className={`badge ${sale.status === 'VOIDED' ? 'bg-red-100 text-red-800' : 'badge-info'}`}>
+                                            {sale.status === 'VOIDED' ? 'VOIDED' : sale.paymentMethod}
+                                        </span>
                                     </td>
                                     <td>{sale.user.name}</td>
                                     <td>
@@ -249,32 +309,12 @@ export const Sales: React.FC = () => {
                                                 <Printer className="w-4 h-4" />
                                             </Button>
 
-                                            {sale.status !== 'VOIDED' && (
+                                            {user?.role === 'ADMIN' && sale.status !== 'VOIDED' && (
                                                 <Button
                                                     variant="danger"
                                                     size="sm"
                                                     title="Void Bill"
-                                                    onClick={async () => {
-                                                        const reason = prompt('Enter reason for cancellation:');
-                                                        if (!reason) return;
-
-                                                        try {
-                                                            await db.sales.update({
-                                                                where: { id: sale.id },
-                                                                data: { status: 'VOIDED' },
-                                                            });
-
-                                                            await auditService.log(
-                                                                'SALE_VOID',
-                                                                JSON.stringify({ billNo: sale.billNo, reason })
-                                                            );
-
-                                                            loadSales();
-                                                        } catch (error) {
-                                                            console.error('Failed to void sale:', error);
-                                                            alert('Failed to void sale');
-                                                        }
-                                                    }}
+                                                    onClick={() => handleVoidClick(sale.id)}
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
@@ -293,6 +333,43 @@ export const Sales: React.FC = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Void Modal */}
+            <Modal
+                isOpen={!!voidSaleId}
+                onClose={() => setVoidSaleId(null)}
+                title="Void Sale"
+                size="sm"
+            >
+                <div className="space-y-4">
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Are you sure you want to void this sale? This action cannot be undone.
+                    </p>
+                    <Input
+                        label="Reason"
+                        value={voidReason}
+                        onChange={(e) => setVoidReason(e.target.value)}
+                        placeholder="Enter reason for cancellation"
+                        autoFocus
+                    />
+                    <div className="flex justify-end gap-2 mt-4">
+                        <Button
+                            variant="secondary"
+                            onClick={() => setVoidSaleId(null)}
+                            disabled={isVoiding}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="danger"
+                            onClick={confirmVoid}
+                            disabled={isVoiding || !voidReason.trim()}
+                        >
+                            {isVoiding ? 'Voiding...' : 'Confirm Void'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };

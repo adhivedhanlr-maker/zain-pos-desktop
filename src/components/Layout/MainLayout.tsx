@@ -12,6 +12,8 @@ import {
     Sun,
     Menu,
     X,
+    Activity,
+    UserCog,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
@@ -38,10 +40,12 @@ export const MainLayout: React.FC = () => {
     const menuItems = [
         { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
         { path: '/pos', icon: ShoppingCart, label: 'Point of Sale' },
-        { path: '/products', icon: Package, label: 'Products' },
+        { path: '/products', icon: Package, label: 'Products', adminOnly: true },
         { path: '/customers', icon: Users, label: 'Customers' },
-        { path: '/sales', icon: FileText, label: 'Sales History' },
-        { path: '/reports', icon: FileText, label: 'Reports' },
+        { path: '/sales', icon: FileText, label: 'Sales History', adminOnly: true },
+        { path: '/reports', icon: FileText, label: 'Reports', adminOnly: true },
+        { path: '/users', icon: UserCog, label: 'User Management', adminOnly: true },
+        { path: '/activity', icon: Activity, label: 'Activity Log', adminOnly: true },
         { path: '/settings', icon: Settings, label: 'Settings', adminOnly: true },
     ];
 

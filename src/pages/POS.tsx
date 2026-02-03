@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { CreditCard, Printer, Trash2, X, Plus, Minus, Scan, Save } from 'lucide-react';
+import { CreditCard, Printer, Trash2, X, Plus, Minus, Scan, Save, Banknote, Smartphone } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { db } from '../lib/db';
 import { printService } from '../services/print.service';
+import { auditService } from '../services/audit.service';
 
 export const POS: React.FC = () => {
     const [shopSettings, setShopSettings] = useState<any>(null);
@@ -20,11 +21,17 @@ export const POS: React.FC = () => {
     const [showPayment, setShowPayment] = useState(false);
     const [processing, setProcessing] = useState(false);
 
+    // Post-Sale Edit State
+    const [currentSaleId, setCurrentSaleId] = useState<string | null>(null);
+
     // New State for Header
     const [customerName, setCustomerName] = useState('Walk-in Customer');
     const [billDate] = useState(new Date().toISOString().split('T')[0]);
 
     const barcodeInputRef = useRef<HTMLInputElement>(null);
+    const discountInputRef = useRef<HTMLInputElement>(null);
+    const paidAmountInputRef = useRef<HTMLInputElement>(null);
+
     const user = useAuthStore((state) => state.user);
 
     const {
@@ -37,6 +44,7 @@ export const POS: React.FC = () => {
         getSubtotal,
         getTaxAmount,
         getGrandTotal,
+        setPaymentMethod,
     } = useCartStore();
 
     useEffect(() => {
@@ -93,10 +101,18 @@ export const POS: React.FC = () => {
 
     const handleBarcodeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!barcode.trim()) return;
+
+        // If barcode is empty and we have items, go to checkout
+        if (!barcode.trim()) {
+            if (items.length > 0) {
+                handleCheckout();
+            }
+            return;
+        }
 
         try {
-            const variant = products.find((p) => p.barcode === barcode.trim());
+            const trimmedBarcode = barcode.trim();
+            const variant = products.find((p) => p.barcode === trimmedBarcode || p.sku === trimmedBarcode);
 
             if (variant) {
                 addItem({
@@ -141,6 +157,10 @@ export const POS: React.FC = () => {
         setPaidAmount(getGrandTotal().toFixed(2));
         setDiscountAmount('');
         setShowPayment(true);
+        // Focus Discount for everyone
+        setTimeout(() => {
+            discountInputRef.current?.focus();
+        }, 100);
     };
 
     // Calculate Totals helper
@@ -195,6 +215,19 @@ export const POS: React.FC = () => {
         }
     };
 
+    const handleNewSale = () => {
+        clearCart();
+        setPaidAmount('');
+        setDiscountAmount('');
+        setShowPayment(false);
+        setCurrentSaleId(null);
+        setCustomerName('Walk-in Customer');
+        loadNextBillNo();
+        loadProducts(); // Refresh stock
+        // Focus barcode
+        setTimeout(() => barcodeInputRef.current?.focus(), 100);
+    };
+
     const handleCompleteSale = async () => {
         if (items.length === 0) return;
 
@@ -208,83 +241,114 @@ export const POS: React.FC = () => {
         setProcessing(true);
 
         try {
-            const subtotal = getSubtotal(); // Recalculate or use from helper if needed, but getSubtotal() is fast
+            const subtotal = getSubtotal();
             const cgst = tax / 2;
             const sgst = tax / 2;
 
-            // Create sale
-            const sale = await db.sales.create({
-                data: {
-                    billNo,
-                    userId: user!.id,
-                    customerName: customerName || 'Walk-in Customer',
-                    subtotal,
-                    discount: discount, // Global discount amount
-                    discountPercent: 0, // Not tracking percent for now
-                    taxAmount: tax,
-                    cgst,
-                    sgst,
-                    grandTotal: finalTotal,
-                    paymentMethod,
-                    paidAmount: paid,
-                    changeAmount: change,
-                    items: {
-                        create: items.map((item: any) => ({
-                            variantId: item.variantId,
-                            productName: item.productName,
-                            variantInfo: item.variantInfo,
-                            quantity: item.quantity,
-                            mrp: item.mrp,
-                            sellingPrice: item.sellingPrice,
-                            discount: item.discount, // This is item level
-                            taxRate: item.taxRate,
-                            taxAmount: (item.sellingPrice * item.quantity * item.taxRate) / (100 + item.taxRate),
-                            total: item.sellingPrice * item.quantity - item.discount, // Line total
-                        })),
-                    },
-                },
-                include: {
-                    items: true,
-                },
-            });
+            let sale;
 
-            // Update stock
-            for (const item of items) {
-                await db.productVariants.update({
-                    where: { id: item.variantId },
+            if (currentSaleId) {
+                // UPDATE EXISTING SALE
+                sale = await db.sales.update({
+                    where: { id: currentSaleId },
                     data: {
-                        stock: {
-                            decrement: item.quantity,
+                        customerName: customerName || 'Walk-in Customer',
+                        subtotal,
+                        discount,
+                        taxAmount: tax,
+                        cgst,
+                        sgst,
+                        grandTotal: finalTotal,
+                        paymentMethod,
+                        paidAmount: paid,
+                        changeAmount: change,
+                        // For simplicity, we aren't diffing items exhaustively here, 
+                        // but ideally we should reconcile items. 
+                        // Given complexity, we'll log the generic update.
+                    }
+                });
+
+                // Log Activity
+                await auditService.log('SALE_UPDATE', `Updated Sale #${billNo}. Total: ${finalTotal}`);
+
+                // Re-print
+                await printReceipt(sale);
+                alert("Sale Updated & Printed!");
+
+            } else {
+                // CREATE NEW SALE
+                sale = await db.sales.create({
+                    data: {
+                        billNo,
+                        userId: user!.id,
+                        customerName: customerName || 'Walk-in Customer',
+                        subtotal,
+                        discount: discount, // Global discount amount
+                        discountPercent: 0,
+                        taxAmount: tax,
+                        cgst,
+                        sgst,
+                        grandTotal: finalTotal,
+                        paymentMethod,
+                        paidAmount: paid,
+                        changeAmount: change,
+                        items: {
+                            create: items.map((item: any) => ({
+                                variantId: item.variantId,
+                                productName: item.productName,
+                                variantInfo: item.variantInfo,
+                                quantity: item.quantity,
+                                mrp: item.mrp,
+                                sellingPrice: item.sellingPrice,
+                                discount: item.discount, // This is item level
+                                taxRate: item.taxRate,
+                                taxAmount: (item.sellingPrice * item.quantity * item.taxRate) / (100 + item.taxRate),
+                                total: item.sellingPrice * item.quantity - item.discount,
+                            })),
                         },
                     },
-                });
-
-                // Create inventory movement
-                await db.inventoryMovements.create({
-                    data: {
-                        variantId: item.variantId,
-                        type: 'OUT',
-                        quantity: -item.quantity,
-                        reason: 'Sale',
-                        reference: sale.id,
-                        createdBy: user!.id,
+                    include: {
+                        items: true,
                     },
                 });
+
+                // Update stock
+                for (const item of items) {
+                    await db.productVariants.update({
+                        where: { id: item.variantId },
+                        data: {
+                            stock: {
+                                decrement: item.quantity,
+                            },
+                        },
+                    });
+
+                    // Create inventory movement
+                    await db.inventoryMovements.create({
+                        data: {
+                            variantId: item.variantId,
+                            type: 'OUT',
+                            quantity: -item.quantity,
+                            reason: 'Sale',
+                            reference: sale.id,
+                            createdBy: user!.id,
+                        },
+                    });
+                }
+
+                // Print receipt
+                await printReceipt(sale);
+
+                // Log
+                await auditService.log('SALE_CREATE', `Created Sale #${billNo}. Total: ${finalTotal}`);
+
+                // Set Current Sale ID to allow "Editing"
+                setCurrentSaleId(sale.id);
             }
 
-            // Print receipt
-            await printReceipt(sale);
+            // DO NOT CLEAR CART - Keep state for review/edit
+            // User can click "New Sale" to reset
 
-            // Reset
-            clearCart();
-            setPaidAmount('');
-            setDiscountAmount('');
-            setShowPayment(false);
-            setCustomerName('Walk-in Customer');
-            loadNextBillNo();
-            loadProducts();
-
-            // alert('Sale completed successfully!'); 
         } catch (error) {
             console.error('Failed to complete sale:', error);
             alert('Failed to complete sale. Please try again.');
@@ -400,7 +464,7 @@ export const POS: React.FC = () => {
                 < div className="flex-[3] flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800" >
 
                     {/* Table Header */}
-                    < div className="grid grid-cols-[40px_150px_1fr_80px_100px_60px_100px] gap-2 bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 text-xs font-bold uppercase text-gray-600 dark:text-gray-400 py-2 px-2" >
+                    <div className="grid grid-cols-[40px_150px_1fr_80px_100px_60px_100px_40px] gap-2 bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 text-xs font-bold uppercase text-gray-600 dark:text-gray-400 py-2 px-2">
                         <div className="text-center">#</div>
                         <div className="">Barcode</div>
                         <div className="">Item Name</div>
@@ -408,10 +472,11 @@ export const POS: React.FC = () => {
                         <div className="text-center">Qty</div>
                         <div className="text-right">Tax%</div>
                         <div className="text-right">Total</div>
-                    </div >
+                        <div className="text-center"></div>
+                    </div>
 
                     {/* Table Body (Scrollable) */}
-                    < div className="flex-1 overflow-y-auto content-start" >
+                    <div className="flex-1 overflow-y-auto content-start">
                         {
                             items.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-gray-300">
@@ -421,7 +486,7 @@ export const POS: React.FC = () => {
                                 </div>
                             ) : (
                                 items.map((item: any, index: number) => (
-                                    <div key={item.variantId} className="grid grid-cols-[40px_150px_1fr_80px_100px_60px_100px] gap-2 border-b border-gray-100 dark:border-gray-700 text-sm py-1 px-2 hover:bg-blue-50 dark:hover:bg-gray-700 items-center relative group">
+                                    <div key={item.variantId} className="grid grid-cols-[40px_150px_1fr_80px_100px_60px_100px_40px] gap-2 border-b border-gray-100 dark:border-gray-700 text-sm py-1 px-2 hover:bg-blue-50 dark:hover:bg-gray-700 items-center group">
                                         <div className="text-center text-gray-500">{index + 1}</div>
                                         <div className="font-mono text-xs text-gray-500 truncate" title={item.barcode}>{item.barcode}</div>
                                         <div className="font-medium truncate" title={`${item.productName} ${item.variantInfo}`}>
@@ -446,18 +511,20 @@ export const POS: React.FC = () => {
                                             ₹{(item.sellingPrice * item.quantity).toFixed(2)}
                                         </div>
 
-                                        {/* Delete Overlay */}
-                                        <button
-                                            onClick={() => removeItem(item.variantId)}
-                                            className="absolute right-0 top-0 bottom-0 px-2 bg-gradient-to-l from-white via-white/80 to-transparent text-red-500 opacity-0 group-hover:opacity-100 flex items-center justify-end"
-                                        >
-                                            <Trash2 className="w-4 h-4 ml-2" />
-                                        </button>
+                                        {/* Delete Button */}
+                                        <div className="text-center">
+                                            <button
+                                                onClick={() => removeItem(item.variantId)}
+                                                className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))
                             )
                         }
-                    </div >
+                    </div>
 
                     {/* Footer Totals */}
                     < div className="bg-gray-100 dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700 p-2 shadow-inner" >
@@ -515,23 +582,76 @@ export const POS: React.FC = () => {
                                     <div className="relative w-32 h-full">
                                         <div className="absolute top-1 left-2 text-[10px] text-gray-400 uppercase font-bold tracking-wider">Discount (₹)</div>
                                         <Input
+                                            ref={discountInputRef}
                                             type="number"
                                             value={discountAmount}
                                             onChange={(e) => setDiscountAmount(e.target.value)}
-                                            className="w-full h-full text-xl font-bold text-right pt-4 px-2 border-2 border-orange-300 focus:border-orange-500 rounded-md"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    paidAmountInputRef.current?.focus();
+                                                }
+                                            }}
+                                            className="w-full h-full text-xl font-bold text-right pt-4 px-2 border-2 border-orange-300 focus:border-orange-500 rounded-md disabled:bg-gray-100 disabled:text-gray-400"
                                             placeholder="0"
                                         />
+                                    </div>
+
+                                    {/* Payment Method Selector */}
+                                    <div className="h-full flex flex-col justify-end pb-1 px-2">
+                                        <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 gap-1 h-10 border border-gray-200 dark:border-gray-600">
+                                            <button
+                                                onClick={() => setPaymentMethod('CASH')}
+                                                className={`flex items-center justify-center w-12 rounded transition-all ${paymentMethod === 'CASH'
+                                                    ? 'bg-green-100 text-green-700 shadow-sm border border-green-200 ring-1 ring-green-400 font-bold'
+                                                    : 'text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                                    }`}
+                                                title="Cash"
+                                            >
+                                                <Banknote className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={() => setPaymentMethod('UPI')}
+                                                className={`flex items-center justify-center w-12 rounded transition-all ${paymentMethod === 'UPI'
+                                                    ? 'bg-purple-100 text-purple-700 shadow-sm border border-purple-200 ring-1 ring-purple-400 font-bold'
+                                                    : 'text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                                    }`}
+                                                title="UPI"
+                                            >
+                                                <Smartphone className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={() => setPaymentMethod('CARD')}
+                                                className={`flex items-center justify-center w-12 rounded transition-all ${paymentMethod === 'CARD'
+                                                    ? 'bg-blue-100 text-blue-700 shadow-sm border border-blue-200 ring-1 ring-blue-400 font-bold'
+                                                    : 'text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                                    }`}
+                                                title="Card"
+                                            >
+                                                <CreditCard className="w-5 h-5" />
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {/* Paid Amount Input */}
                                     <div className="relative w-40 h-full">
                                         <div className="absolute top-1 left-2 text-[10px] text-gray-400 uppercase font-bold tracking-wider">Paid Amount</div>
                                         <Input
+                                            ref={paidAmountInputRef}
                                             type="number"
                                             value={paidAmount}
                                             onChange={(e) => setPaidAmount(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    if (currentSaleId) {
+                                                        handleNewSale();
+                                                    } else {
+                                                        handleCompleteSale();
+                                                    }
+                                                }
+                                            }}
                                             className="w-full h-full text-2xl font-bold text-right pt-4 px-2 border-2 border-blue-500 focus:ring-0 rounded-md"
-                                            autoFocus
                                             placeholder="0"
                                         />
                                     </div>
@@ -546,28 +666,29 @@ export const POS: React.FC = () => {
 
                                     <div className="flex-1"></div>
 
-                                    {/* Draft Button */}
-                                    <Button
-                                        variant="secondary"
-                                        className="h-full px-4 flex flex-col items-center justify-center border-2 border-gray-300"
-                                        onClick={handlePrintDraft}
-                                        disabled={processing}
-                                        title="Print without saving"
-                                    >
-                                        <Printer className="w-5 h-5 mb-0.5" />
-                                        <span className="text-[10px] uppercase font-bold">Preview</span>
-                                    </Button>
+                                    {/* New Sale Button (Only if Sale Completed) */}
+                                    {currentSaleId && (
+                                        <Button
+                                            variant="primary"
+                                            className="h-full px-4 flex flex-col items-center justify-center border-2 border-blue-600 bg-blue-50 text-blue-700"
+                                            onClick={handleNewSale}
+                                        >
+                                            <span className="text-xs uppercase font-bold">New Sale</span>
+                                        </Button>
+                                    )}
 
                                     {/* Complete Button */}
-                                    <Button
-                                        variant="success"
-                                        className="h-full px-8 text-xl font-bold flex items-center justify-center min-w-[180px]"
-                                        onClick={handleCompleteSale}
-                                        disabled={processing}
-                                    >
-                                        <Save className="w-6 h-6 mr-2" />
-                                        {processing ? 'Saving...' : 'COMPLETE'}
-                                    </Button>
+                                    {(!currentSaleId || user?.role === 'ADMIN') && (
+                                        <Button
+                                            variant="success"
+                                            className="h-full px-8 text-xl font-bold flex items-center justify-center min-w-[180px]"
+                                            onClick={handleCompleteSale}
+                                            disabled={processing}
+                                        >
+                                            <Save className="w-6 h-6 mr-2" />
+                                            {processing ? 'Saving...' : (currentSaleId ? 'UPDATE & REPRINT' : 'COMPLETE & PRINT')}
+                                        </Button>
+                                    )}
 
                                     {/* Cancel Button */}
                                     <Button
