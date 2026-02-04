@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import * as XLSX from 'xlsx';
+import { cloudSync } from './sync.service';
 
 // Global error handling - MUST BE FIRST
 process.on('uncaughtException', (error) => {
@@ -85,7 +86,25 @@ function getDatabasePath() {
     return dbPath;
 }
 
-function initializePrisma() {
+async function ensureSchemaUpdated() {
+    try {
+        // 1. Check if permViewInsights column exists in user table
+        const tableInfo: any[] = await prisma.$queryRawUnsafe(`PRAGMA table_info(user)`);
+        const hasInsightsCol = tableInfo.some(col => col.name === 'permViewInsights');
+
+        if (!hasInsightsCol) {
+            console.log('Migrating database: Adding permViewInsights column...');
+            await prisma.$executeRawUnsafe(`ALTER TABLE user ADD COLUMN permViewInsights BOOLEAN DEFAULT 0`);
+            console.log('Migration successful.');
+        }
+
+        // Add other columns here as we expand the app
+    } catch (error) {
+        console.error('Migration error:', error);
+    }
+}
+
+async function initializePrisma() {
     const dbPath = getDatabasePath();
     console.log('Initializing database at:', dbPath);
 
@@ -96,6 +115,9 @@ function initializePrisma() {
             }
         }
     });
+
+    // Run auto-migrations
+    await ensureSchemaUpdated();
 }
 let mainWindow: BrowserWindow | null = null;
 
@@ -162,9 +184,9 @@ function createWindow() {
     });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     try {
-        initializePrisma();
+        await initializePrisma();
         createWindow();
 
         app.on('activate', () => {
@@ -254,17 +276,57 @@ ipcMain.handle('backup:configure', async (_event, config) => {
         if (config.enabled && config.intervalMinutes > 0) {
             console.log(`Starting auto-backup every ${config.intervalMinutes} minutes`);
             backupInterval = setInterval(async () => {
-                // Call global performAutoBackup
                 await performAutoBackup();
             }, config.intervalMinutes * 60 * 1000);
-        } else {
-            console.log('Auto-backup disabled (or set to On-Close only)');
         }
 
         return { success: true };
     } catch (error: any) {
         return { success: false, error: error.message };
     }
+});
+
+let syncInterval: NodeJS.Timeout | null = null;
+
+async function runCloudSync() {
+    try {
+        const setting = await prisma.setting.findUnique({ where: { key: 'CLOUD_API_URL' } });
+        if (!setting || !setting.value) return;
+
+        cloudSync.setApiUrl(setting.value);
+
+        const products = await prisma.product.findMany({
+            include: { category: true, variants: true }
+        });
+        await cloudSync.syncInventory(products);
+
+        const sales = await prisma.sale.findMany({
+            where: { status: 'COMPLETED' },
+            include: { items: true },
+            orderBy: { createdAt: 'desc' },
+            take: 100
+        });
+        await cloudSync.syncSales(sales);
+        console.log('✅ Background Cloud Sync Complete');
+    } catch (e) {
+        console.error('Background Sync Failed:', e);
+    }
+}
+
+ipcMain.handle('cloud:configure', async (_event, { intervalMinutes }) => {
+    if (syncInterval) clearInterval(syncInterval);
+
+    if (intervalMinutes > 0) {
+        console.log(`Starting auto-sync every ${intervalMinutes} minutes`);
+        syncInterval = setInterval(runCloudSync, intervalMinutes * 60 * 1000);
+    }
+
+    await prisma.setting.upsert({
+        where: { key: 'CLOUD_SYNC_CONFIG' },
+        update: { value: JSON.stringify({ intervalMinutes }) },
+        create: { key: 'CLOUD_SYNC_CONFIG', value: JSON.stringify({ intervalMinutes }) }
+    });
+    return { success: true };
 });
 ipcMain.handle('db:query', async (_event, { model, method, args }) => {
     try {
@@ -574,7 +636,7 @@ ipcMain.handle('products:import', async () => {
                             name: productName,
                             categoryId: categoryId || '',
                             hsn: getVal(['HSN Code', 'HSN'])?.toString(),
-                            taxRate: parseFloat(getVal(['GST %', 'GST', 'Tax']) || '0')
+                            taxRate: parseFloat(getVal(['GST %', 'GST', 'Tax']) || '5')
                         }
                     });
                 }
@@ -669,7 +731,34 @@ ipcMain.handle('users:list', async () => {
     try {
         const users = await prisma.user.findMany({
             orderBy: { name: 'asc' },
-            select: { id: true, username: true, name: true, role: true, isActive: true, createdAt: true, password: true }
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                role: true,
+                isActive: true,
+                createdAt: true,
+                password: true,
+                // Permissions
+                permPrintSticker: true,
+                permAddItem: true,
+                permDeleteProduct: true,
+                permVoidSale: true,
+                permViewReports: true,
+                permViewSales: true,
+                permViewGstReports: true,
+                permManageProducts: true,
+                permEditSettings: true,
+                permEditSales: true,
+                permManageInventory: true,
+                permManageUsers: true,
+                permViewCostPrice: true,
+                permChangePayment: true,
+                permDeleteAudit: true,
+                permBulkUpdate: true,
+                permBackDateSale: true,
+                maxDiscount: true
+            }
         });
         return { success: true, data: users };
     } catch (error: any) {
@@ -733,6 +822,44 @@ ipcMain.handle('users:delete', async (_event, id) => {
         });
         return { success: true };
     } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('cloud:syncNow', async () => {
+    try {
+        console.log('🔄 Manual Sync Starting...');
+
+        // 1. Get Cloud URL from settings
+        const setting = await prisma.setting.findUnique({ where: { key: 'CLOUD_API_URL' } });
+        if (!setting || !setting.value) {
+            // Default to a known URL or alert user
+            return { success: false, error: 'Cloud API URL not configured in Settings.' };
+        }
+
+        cloudSync.setApiUrl(setting.value);
+
+        // 2. Fetch all products with relations
+        const products = await prisma.product.findMany({
+            include: {
+                category: true,
+                variants: true
+            }
+        });
+        await cloudSync.syncInventory(products);
+
+        // 3. Fetch recent sales (e.g., last 30 days or all)
+        const sales = await prisma.sale.findMany({
+            where: { status: 'COMPLETED' },
+            include: { items: true },
+            orderBy: { createdAt: 'desc' },
+            take: 500 // Limit to avoid massive payloads
+        });
+        await cloudSync.syncSales(sales);
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Manual sync failed:', error);
         return { success: false, error: error.message };
     }
 });

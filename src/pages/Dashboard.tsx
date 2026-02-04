@@ -7,6 +7,8 @@ import {
     AlertTriangle,
     Package,
     Calendar,
+    Cloud,
+    RefreshCw
 } from 'lucide-react';
 import { reportsService } from '../services/reports.service';
 import { db } from '../lib/db';
@@ -34,21 +36,25 @@ export const Dashboard: React.FC = () => {
     const [lowStockItems, setLowStockItems] = useState<any[]>([]);
     const [topProducts, setTopProducts] = useState<any[]>([]);
     const [chartData, setChartData] = useState<any[]>([]);
-    const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>('all');
+    const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>('today');
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [syncing, setSyncing] = useState(false);
 
     useEffect(() => {
         loadDashboardData();
-    }, []);
+    }, [selectedDate]);
 
     useEffect(() => {
         loadChartData();
-    }, [filterPeriod]);
+    }, [filterPeriod, selectedYear, selectedDate]);
 
     const loadDashboardData = async () => {
         try {
             setLoading(true);
+            const targetDate = new Date(selectedDate);
             const [dailyReport, yesterdayReport, lowStock, topSelling] = await Promise.all([
-                reportsService.getDailySalesReport(),
+                reportsService.getDailySalesReport(targetDate),
                 reportsService.getYesterdaySalesReport(),
                 reportsService.getLowStockItems(),
                 reportsService.getTopSellingProducts(5),
@@ -87,8 +93,9 @@ export const Dashboard: React.FC = () => {
     const loadChartData = async () => {
         try {
             if (filterPeriod === 'today') {
-                // Show hourly breakdown for today
-                const todayReport = await reportsService.getDailySalesReport();
+                // Show hourly breakdown for the selected date
+                const targetDate = new Date(selectedDate);
+                const todayReport = await reportsService.getDailySalesReport(targetDate);
                 const hours = Array.from({ length: 24 }, (_, i) => i);
 
                 const hourlyData = hours.map(hour => {
@@ -144,10 +151,9 @@ export const Dashboard: React.FC = () => {
 
                 setChartData(data);
             } else if (filterPeriod === 'year') {
-                // Show monthly breakdown for current year
+                // Show monthly breakdown for specific year
                 const months = Array.from({ length: 12 }, (_, i) => {
-                    const date = new Date();
-                    date.setMonth(i);
+                    const date = new Date(selectedYear, i, 1);
                     return date;
                 });
 
@@ -204,6 +210,23 @@ export const Dashboard: React.FC = () => {
             }
         } catch (error) {
             console.error('Failed to load chart data:', error);
+        }
+    };
+
+    const handleSync = async () => {
+        try {
+            setSyncing(true);
+            const result = await db.syncNow();
+            if (result.success) {
+                alert('🚀 Data synced with cloud successfully!');
+            } else {
+                alert('❌ Sync failed: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Manual sync failed:', error);
+            alert('❌ Sync error: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        } finally {
+            setSyncing(false);
         }
     };
 
@@ -270,11 +293,25 @@ export const Dashboard: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Welcome */}
-            <div className="card gradient-primary text-white">
-                <h1 className="text-2xl font-bold mb-2">Welcome to Zain POS</h1>
-                <p className="text-white/90">
-                    Here's what's happening with your store today.
-                </p>
+            <div className="card gradient-primary text-white flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold mb-2">Welcome to Zain POS</h1>
+                    <p className="text-white/90">
+                        Here's what's happening with your store today.
+                    </p>
+                </div>
+                <button
+                    onClick={handleSync}
+                    disabled={syncing}
+                    className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-3 rounded-xl border border-white/30 transition-all active:scale-95 disabled:opacity-50"
+                >
+                    {syncing ? (
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                    ) : (
+                        <Cloud className="w-5 h-5" />
+                    )}
+                    <span className="font-semibold">{syncing ? 'Syncing...' : 'Sync Cloud'}</span>
+                </button>
             </div>
 
             {/* Stats Grid */}
@@ -351,12 +388,45 @@ export const Dashboard: React.FC = () => {
                         >
                             Year
                         </button>
+
+                        {filterPeriod === 'year' && (
+                            <select
+                                value={selectedYear}
+                                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                                className="px-2 py-1 text-sm rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                                    <option key={year} value={year}>{year}</option>
+                                ))}
+                            </select>
+                        )}
+
                         <button
                             onClick={() => setFilterPeriod('all')}
                             className={`px-3 py-1 text-sm rounded transition-colors ${filterPeriod === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
                         >
                             All Time
                         </button>
+
+                        <div className="flex items-center gap-2 border-l pl-2 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg px-2 border border-gray-200 dark:border-gray-600 focus-within:ring-1 focus-within:ring-blue-500">
+                            <Calendar
+                                className="w-4 h-4 text-gray-400 cursor-pointer"
+                                onClick={() => {
+                                    const input = document.getElementById('dashboard-date-picker') as HTMLInputElement;
+                                    if (input) input.showPicker();
+                                }}
+                            />
+                            <input
+                                id="dashboard-date-picker"
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => {
+                                    setSelectedDate(e.target.value);
+                                    setFilterPeriod('today');
+                                }}
+                                className="bg-transparent border-none text-sm focus:ring-0 outline-none p-1 cursor-pointer"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -487,20 +557,69 @@ export const Dashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Payment Methods Breakdown */}
-            {todayStats?.paymentBreakdown && Object.keys(todayStats.paymentBreakdown).length > 0 && (
-                <div className="card">
-                    <h3 className="text-lg font-semibold mb-4">Payment Methods (Today)</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {Object.entries(todayStats.paymentBreakdown).map(([method, amount]: any) => (
-                            <div
-                                key={method}
-                                className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                            >
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{method}</p>
-                                <p className="text-2xl font-bold mt-1">{formatIndianCurrency(amount)}</p>
-                            </div>
-                        ))}
+            {/* Separated Transaction Audit by Payment Mode */}
+            {todayStats?.sales && (
+                <div className="space-y-6 mt-8">
+                    <div className="flex items-center justify-between border-b pb-2 dark:border-gray-700">
+                        <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Audit by Payment Mode</h3>
+                        <div className="text-sm font-bold text-primary-600 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full border border-primary-200">
+                            Date: {formatDate(new Date(selectedDate), 'dd MMM yyyy')}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        {['CASH', 'UPI', 'CARD'].map((mode) => {
+                            const modeSales = todayStats.sales.filter((s: any) => s.paymentMethod === mode);
+                            const modeTotal = modeSales.reduce((sum: number, s: any) => sum + s.grandTotal, 0);
+
+                            return (
+                                <div key={mode} className="flex flex-col h-full overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-dark-card shadow-sm">
+                                    <div className={`p-4 flex justify-between items-center ${mode === 'CASH' ? 'bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700' :
+                                        mode === 'UPI' ? 'bg-sky-50 dark:bg-sky-900/10 text-sky-700' :
+                                            'bg-violet-50 dark:bg-violet-900/10 text-violet-700'
+                                        }`}>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full ${mode === 'CASH' ? 'bg-emerald-500' :
+                                                mode === 'UPI' ? 'bg-sky-500' :
+                                                    'bg-violet-500'
+                                                }`} />
+                                            <span className="font-black text-xs uppercase tracking-widest">{mode} TRANSACTIONS</span>
+                                        </div>
+                                        <span className="font-black text-lg">{formatIndianCurrency(modeTotal)}</span>
+                                    </div>
+
+                                    <div className="flex-1 overflow-y-auto max-h-[400px]">
+                                        <table className="w-full text-left">
+                                            <thead className="bg-gray-50/50 dark:bg-gray-800/50 sticky top-0 backdrop-blur-sm">
+                                                <tr className="text-[10px] font-bold text-gray-400 uppercase">
+                                                    <th className="px-4 py-3">Bill</th>
+                                                    <th className="px-4 py-3">Time</th>
+                                                    <th className="px-4 py-3 text-right">Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                                                {modeSales.length > 0 ? (
+                                                    modeSales.map((sale: any) => (
+                                                        <tr key={sale.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                                            <td className="px-4 py-3 font-mono text-gray-900 dark:text-white">#{sale.billNo}</td>
+                                                            <td className="px-4 py-3 text-xs text-gray-500 text-nowrap">{formatDate(new Date(sale.createdAt), 'hh:mm a')}</td>
+                                                            <td className="px-4 py-3 text-right font-bold text-gray-900 dark:text-white">{formatIndianCurrency(sale.grandTotal)}</td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan={3} className="px-4 py-12 text-center text-xs text-gray-400 italic">No {mode} sales</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="p-3 bg-gray-50/50 dark:bg-gray-800/50 text-[10px] font-bold text-gray-400 text-center uppercase border-t border-gray-100 dark:border-gray-800">
+                                        Count: {modeSales.length} Invoices
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

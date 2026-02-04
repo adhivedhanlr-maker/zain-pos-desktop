@@ -8,6 +8,10 @@ class DatabaseService {
         return result.data;
     }
 
+    async syncNow() {
+        return await window.electronAPI.db.syncNow();
+    }
+
     // User operations
     users = {
         findUnique: (args: any) => this.query('user', 'findUnique', args),
@@ -20,6 +24,7 @@ class DatabaseService {
     // Product operations
     products = {
         findUnique: (args: any) => this.query('product', 'findUnique', args),
+        findFirst: (args: any) => this.query('product', 'findFirst', args),
         findMany: (args?: any) => this.query('product', 'findMany', args),
         create: (args: any) => this.query('product', 'create', args),
         update: (args: any) => this.query('product', 'update', args),
@@ -29,6 +34,7 @@ class DatabaseService {
     // Product Variant operations
     productVariants = {
         findUnique: (args: any) => this.query('productVariant', 'findUnique', args),
+        findFirst: (args: any) => this.query('productVariant', 'findFirst', args),
         findMany: (args?: any) => this.query('productVariant', 'findMany', args),
         create: (args: any) => this.query('productVariant', 'create', args),
         update: (args: any) => this.query('productVariant', 'update', args),

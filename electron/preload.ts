@@ -8,6 +8,8 @@ const api = {
         backup: () => ipcRenderer.invoke('db:backup'),
         restore: () => ipcRenderer.invoke('db:restore'),
         configureBackup: (config: any) => ipcRenderer.invoke('backup:configure', config),
+        syncNow: () => ipcRenderer.invoke('cloud:syncNow'),
+        configureSync: (config: { intervalMinutes: number }) => ipcRenderer.invoke('cloud:configure', config),
     },
 
     // Settings

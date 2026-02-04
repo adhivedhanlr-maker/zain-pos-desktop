@@ -6,12 +6,30 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { db } from '../lib/db';
+import { useAuthStore } from '../store/authStore';
+import { ShieldAlert } from 'lucide-react';
 
 export const Reports: React.FC = () => {
+    const { user } = useAuthStore();
     const [reportData, setReportData] = useState<any>(null);
     const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
     const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
     const [loading, setLoading] = useState(false);
+
+    if (user?.role !== 'ADMIN' && !user?.permViewGstReports) {
+        return (
+            <div className="h-[60vh] flex flex-col items-center justify-center text-center space-y-4">
+                <div className="p-4 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full">
+                    <ShieldAlert className="w-12 h-12" />
+                </div>
+                <h1 className="text-2xl font-bold">Access Denied</h1>
+                <p className="text-gray-500 max-w-md">
+                    You do not have permission to view GST Reports.
+                    Please contact your administrator to request access.
+                </p>
+            </div>
+        );
+    }
 
     const generateReport = async () => {
         try {
@@ -67,6 +85,9 @@ export const Reports: React.FC = () => {
                     cgst,
                     sgst,
                     count: salesList.length,
+                    cashTotal: salesList.filter(s => s.paymentMethod === 'CASH').reduce((sum, s) => sum + s.grandTotal, 0),
+                    upiTotal: salesList.filter(s => s.paymentMethod === 'UPI').reduce((sum, s) => sum + s.grandTotal, 0),
+                    cardTotal: salesList.filter(s => s.paymentMethod === 'CARD').reduce((sum, s) => sum + s.grandTotal, 0),
                 };
             };
 
@@ -237,6 +258,21 @@ export const Reports: React.FC = () => {
             styles: { fontSize: 8, cellPadding: 1 },
         });
 
+        currentY = (doc as any).lastAutoTable.finalY + 5;
+
+        // Payment Mode Breakdown
+        autoTable(doc, {
+            startY: currentY,
+            body: [
+                ['Payment Mode Breakdown', '', '', ''],
+                ['CASH', allTotals.cashTotal.toFixed(2), '', ''],
+                ['UPI', allTotals.upiTotal.toFixed(2), '', ''],
+                ['CARD', allTotals.cardTotal.toFixed(2), '', ''],
+            ],
+            theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 1, fontStyle: 'bold' },
+        });
+
         doc.save(`GST-Report-${format(reportData.startDate, 'dd-MM-yyyy')}-to-${format(reportData.endDate, 'dd-MM-yyyy')}.pdf`);
     };
 
@@ -302,6 +338,11 @@ export const Reports: React.FC = () => {
             [],
             ['CGST', reportData.allSalesTotals.cgst, '', reportData.allSalesTotals.cgst],
             ['SGST', reportData.allSalesTotals.sgst, '', reportData.allSalesTotals.sgst],
+            [],
+            ['Payment Method Breakdown'],
+            ['CASH', reportData.allSalesTotals.cashTotal],
+            ['UPI', reportData.allSalesTotals.upiTotal],
+            ['CARD', reportData.allSalesTotals.cardTotal],
         ];
 
         const wsAllSales = XLSX.utils.aoa_to_sheet(allSalesData);
@@ -417,6 +458,23 @@ export const Reports: React.FC = () => {
                         <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200">
                             <p className="text-xs text-gray-600 dark:text-gray-400">Net Total</p>
                             <p className="text-xl font-bold">{formatIndianCurrency(reportData.allSalesTotals.netTotal)}</p>
+                        </div>
+                    </div>
+
+                    {/* Payment Breakdown */}
+                    <h4 className="font-bold mb-2">Payment Methods</h4>
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                        <div className="p-3 bg-green-50 dark:bg-green-900/10 rounded border border-green-200">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Cash</p>
+                            <p className="text-lg font-bold">{formatIndianCurrency(reportData.allSalesTotals.cashTotal)}</p>
+                        </div>
+                        <div className="p-3 bg-purple-50 dark:bg-purple-900/10 rounded border border-purple-200">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">UPI</p>
+                            <p className="text-lg font-bold">{formatIndianCurrency(reportData.allSalesTotals.upiTotal)}</p>
+                        </div>
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded border border-blue-200">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Card</p>
+                            <p className="text-lg font-bold">{formatIndianCurrency(reportData.allSalesTotals.cardTotal)}</p>
                         </div>
                     </div>
 

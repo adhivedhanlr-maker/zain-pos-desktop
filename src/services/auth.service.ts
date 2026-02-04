@@ -6,6 +6,32 @@ export const authService = {
         try {
             const user = await db.users.findUnique({
                 where: { username },
+                select: {
+                    id: true,
+                    username: true,
+                    password: true,
+                    name: true,
+                    role: true,
+                    isActive: true,
+                    permPrintSticker: true,
+                    permAddItem: true,
+                    permDeleteProduct: true,
+                    permVoidSale: true,
+                    permViewReports: true,
+                    permViewSales: true,
+                    permViewGstReports: true,
+                    permManageProducts: true,
+                    permEditSettings: true,
+                    permEditSales: true,
+                    permManageInventory: true,
+                    permManageUsers: true,
+                    permViewCostPrice: true,
+                    permChangePayment: true,
+                    permDeleteAudit: true,
+                    permBulkUpdate: true,
+                    permBackDateSale: true,
+                    maxDiscount: true,
+                }
             });
 
             if (!user) {

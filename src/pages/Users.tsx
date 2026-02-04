@@ -162,7 +162,7 @@ export const Users: React.FC = () => {
                     setFormData({ username: '', password: '', name: '', role: 'CASHIER' });
                     setShowUserModal(true);
                 }}>
-                    <Plus className="w-5 h-5 mr-2" />
+                    <Plus className="w-5 h-5" />
                     Add User
                 </Button>
             </div>

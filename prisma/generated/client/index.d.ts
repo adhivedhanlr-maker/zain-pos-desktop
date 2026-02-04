@@ -1881,8 +1881,18 @@ export namespace Prisma {
 
   export type AggregateUser = {
     _count: UserCountAggregateOutputType | null
+    _avg: UserAvgAggregateOutputType | null
+    _sum: UserSumAggregateOutputType | null
     _min: UserMinAggregateOutputType | null
     _max: UserMaxAggregateOutputType | null
+  }
+
+  export type UserAvgAggregateOutputType = {
+    maxDiscount: number | null
+  }
+
+  export type UserSumAggregateOutputType = {
+    maxDiscount: number | null
   }
 
   export type UserMinAggregateOutputType = {
@@ -1892,6 +1902,24 @@ export namespace Prisma {
     name: string | null
     role: string | null
     isActive: boolean | null
+    permPrintSticker: boolean | null
+    permAddItem: boolean | null
+    permDeleteProduct: boolean | null
+    permVoidSale: boolean | null
+    permViewReports: boolean | null
+    permEditSettings: boolean | null
+    permManageProducts: boolean | null
+    permViewSales: boolean | null
+    permViewGstReports: boolean | null
+    permEditSales: boolean | null
+    permManageInventory: boolean | null
+    permManageUsers: boolean | null
+    permViewCostPrice: boolean | null
+    permChangePayment: boolean | null
+    permDeleteAudit: boolean | null
+    permBulkUpdate: boolean | null
+    permBackDateSale: boolean | null
+    maxDiscount: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -1903,6 +1931,24 @@ export namespace Prisma {
     name: string | null
     role: string | null
     isActive: boolean | null
+    permPrintSticker: boolean | null
+    permAddItem: boolean | null
+    permDeleteProduct: boolean | null
+    permVoidSale: boolean | null
+    permViewReports: boolean | null
+    permEditSettings: boolean | null
+    permManageProducts: boolean | null
+    permViewSales: boolean | null
+    permViewGstReports: boolean | null
+    permEditSales: boolean | null
+    permManageInventory: boolean | null
+    permManageUsers: boolean | null
+    permViewCostPrice: boolean | null
+    permChangePayment: boolean | null
+    permDeleteAudit: boolean | null
+    permBulkUpdate: boolean | null
+    permBackDateSale: boolean | null
+    maxDiscount: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -1914,11 +1960,37 @@ export namespace Prisma {
     name: number
     role: number
     isActive: number
+    permPrintSticker: number
+    permAddItem: number
+    permDeleteProduct: number
+    permVoidSale: number
+    permViewReports: number
+    permEditSettings: number
+    permManageProducts: number
+    permViewSales: number
+    permViewGstReports: number
+    permEditSales: number
+    permManageInventory: number
+    permManageUsers: number
+    permViewCostPrice: number
+    permChangePayment: number
+    permDeleteAudit: number
+    permBulkUpdate: number
+    permBackDateSale: number
+    maxDiscount: number
     createdAt: number
     updatedAt: number
     _all: number
   }
 
+
+  export type UserAvgAggregateInputType = {
+    maxDiscount?: true
+  }
+
+  export type UserSumAggregateInputType = {
+    maxDiscount?: true
+  }
 
   export type UserMinAggregateInputType = {
     id?: true
@@ -1927,6 +1999,24 @@ export namespace Prisma {
     name?: true
     role?: true
     isActive?: true
+    permPrintSticker?: true
+    permAddItem?: true
+    permDeleteProduct?: true
+    permVoidSale?: true
+    permViewReports?: true
+    permEditSettings?: true
+    permManageProducts?: true
+    permViewSales?: true
+    permViewGstReports?: true
+    permEditSales?: true
+    permManageInventory?: true
+    permManageUsers?: true
+    permViewCostPrice?: true
+    permChangePayment?: true
+    permDeleteAudit?: true
+    permBulkUpdate?: true
+    permBackDateSale?: true
+    maxDiscount?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1938,6 +2028,24 @@ export namespace Prisma {
     name?: true
     role?: true
     isActive?: true
+    permPrintSticker?: true
+    permAddItem?: true
+    permDeleteProduct?: true
+    permVoidSale?: true
+    permViewReports?: true
+    permEditSettings?: true
+    permManageProducts?: true
+    permViewSales?: true
+    permViewGstReports?: true
+    permEditSales?: true
+    permManageInventory?: true
+    permManageUsers?: true
+    permViewCostPrice?: true
+    permChangePayment?: true
+    permDeleteAudit?: true
+    permBulkUpdate?: true
+    permBackDateSale?: true
+    maxDiscount?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1949,6 +2057,24 @@ export namespace Prisma {
     name?: true
     role?: true
     isActive?: true
+    permPrintSticker?: true
+    permAddItem?: true
+    permDeleteProduct?: true
+    permVoidSale?: true
+    permViewReports?: true
+    permEditSettings?: true
+    permManageProducts?: true
+    permViewSales?: true
+    permViewGstReports?: true
+    permEditSales?: true
+    permManageInventory?: true
+    permManageUsers?: true
+    permViewCostPrice?: true
+    permChangePayment?: true
+    permDeleteAudit?: true
+    permBulkUpdate?: true
+    permBackDateSale?: true
+    maxDiscount?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -1992,6 +2118,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: UserAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: UserSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: UserMinAggregateInputType
@@ -2022,6 +2160,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: UserCountAggregateInputType | true
+    _avg?: UserAvgAggregateInputType
+    _sum?: UserSumAggregateInputType
     _min?: UserMinAggregateInputType
     _max?: UserMaxAggregateInputType
   }
@@ -2033,9 +2173,29 @@ export namespace Prisma {
     name: string
     role: string
     isActive: boolean
+    permPrintSticker: boolean
+    permAddItem: boolean
+    permDeleteProduct: boolean
+    permVoidSale: boolean
+    permViewReports: boolean
+    permEditSettings: boolean
+    permManageProducts: boolean
+    permViewSales: boolean
+    permViewGstReports: boolean
+    permEditSales: boolean
+    permManageInventory: boolean
+    permManageUsers: boolean
+    permViewCostPrice: boolean
+    permChangePayment: boolean
+    permDeleteAudit: boolean
+    permBulkUpdate: boolean
+    permBackDateSale: boolean
+    maxDiscount: number
     createdAt: Date
     updatedAt: Date
     _count: UserCountAggregateOutputType | null
+    _avg: UserAvgAggregateOutputType | null
+    _sum: UserSumAggregateOutputType | null
     _min: UserMinAggregateOutputType | null
     _max: UserMaxAggregateOutputType | null
   }
@@ -2061,6 +2221,24 @@ export namespace Prisma {
     name?: boolean
     role?: boolean
     isActive?: boolean
+    permPrintSticker?: boolean
+    permAddItem?: boolean
+    permDeleteProduct?: boolean
+    permVoidSale?: boolean
+    permViewReports?: boolean
+    permEditSettings?: boolean
+    permManageProducts?: boolean
+    permViewSales?: boolean
+    permViewGstReports?: boolean
+    permEditSales?: boolean
+    permManageInventory?: boolean
+    permManageUsers?: boolean
+    permViewCostPrice?: boolean
+    permChangePayment?: boolean
+    permDeleteAudit?: boolean
+    permBulkUpdate?: boolean
+    permBackDateSale?: boolean
+    maxDiscount?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     sales?: boolean | User$salesArgs<ExtArgs>
@@ -2075,6 +2253,24 @@ export namespace Prisma {
     name?: boolean
     role?: boolean
     isActive?: boolean
+    permPrintSticker?: boolean
+    permAddItem?: boolean
+    permDeleteProduct?: boolean
+    permVoidSale?: boolean
+    permViewReports?: boolean
+    permEditSettings?: boolean
+    permManageProducts?: boolean
+    permViewSales?: boolean
+    permViewGstReports?: boolean
+    permEditSales?: boolean
+    permManageInventory?: boolean
+    permManageUsers?: boolean
+    permViewCostPrice?: boolean
+    permChangePayment?: boolean
+    permDeleteAudit?: boolean
+    permBulkUpdate?: boolean
+    permBackDateSale?: boolean
+    maxDiscount?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
@@ -2086,6 +2282,24 @@ export namespace Prisma {
     name?: boolean
     role?: boolean
     isActive?: boolean
+    permPrintSticker?: boolean
+    permAddItem?: boolean
+    permDeleteProduct?: boolean
+    permVoidSale?: boolean
+    permViewReports?: boolean
+    permEditSettings?: boolean
+    permManageProducts?: boolean
+    permViewSales?: boolean
+    permViewGstReports?: boolean
+    permEditSales?: boolean
+    permManageInventory?: boolean
+    permManageUsers?: boolean
+    permViewCostPrice?: boolean
+    permChangePayment?: boolean
+    permDeleteAudit?: boolean
+    permBulkUpdate?: boolean
+    permBackDateSale?: boolean
+    maxDiscount?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -2110,6 +2324,24 @@ export namespace Prisma {
       name: string
       role: string
       isActive: boolean
+      permPrintSticker: boolean
+      permAddItem: boolean
+      permDeleteProduct: boolean
+      permVoidSale: boolean
+      permViewReports: boolean
+      permEditSettings: boolean
+      permManageProducts: boolean
+      permViewSales: boolean
+      permViewGstReports: boolean
+      permEditSales: boolean
+      permManageInventory: boolean
+      permManageUsers: boolean
+      permViewCostPrice: boolean
+      permChangePayment: boolean
+      permDeleteAudit: boolean
+      permBulkUpdate: boolean
+      permBackDateSale: boolean
+      maxDiscount: number
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["user"]>
@@ -2513,6 +2745,24 @@ export namespace Prisma {
     readonly name: FieldRef<"User", 'String'>
     readonly role: FieldRef<"User", 'String'>
     readonly isActive: FieldRef<"User", 'Boolean'>
+    readonly permPrintSticker: FieldRef<"User", 'Boolean'>
+    readonly permAddItem: FieldRef<"User", 'Boolean'>
+    readonly permDeleteProduct: FieldRef<"User", 'Boolean'>
+    readonly permVoidSale: FieldRef<"User", 'Boolean'>
+    readonly permViewReports: FieldRef<"User", 'Boolean'>
+    readonly permEditSettings: FieldRef<"User", 'Boolean'>
+    readonly permManageProducts: FieldRef<"User", 'Boolean'>
+    readonly permViewSales: FieldRef<"User", 'Boolean'>
+    readonly permViewGstReports: FieldRef<"User", 'Boolean'>
+    readonly permEditSales: FieldRef<"User", 'Boolean'>
+    readonly permManageInventory: FieldRef<"User", 'Boolean'>
+    readonly permManageUsers: FieldRef<"User", 'Boolean'>
+    readonly permViewCostPrice: FieldRef<"User", 'Boolean'>
+    readonly permChangePayment: FieldRef<"User", 'Boolean'>
+    readonly permDeleteAudit: FieldRef<"User", 'Boolean'>
+    readonly permBulkUpdate: FieldRef<"User", 'Boolean'>
+    readonly permBackDateSale: FieldRef<"User", 'Boolean'>
+    readonly maxDiscount: FieldRef<"User", 'Float'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
   }
@@ -12990,6 +13240,24 @@ export namespace Prisma {
     name: 'name',
     role: 'role',
     isActive: 'isActive',
+    permPrintSticker: 'permPrintSticker',
+    permAddItem: 'permAddItem',
+    permDeleteProduct: 'permDeleteProduct',
+    permVoidSale: 'permVoidSale',
+    permViewReports: 'permViewReports',
+    permEditSettings: 'permEditSettings',
+    permManageProducts: 'permManageProducts',
+    permViewSales: 'permViewSales',
+    permViewGstReports: 'permViewGstReports',
+    permEditSales: 'permEditSales',
+    permManageInventory: 'permManageInventory',
+    permManageUsers: 'permManageUsers',
+    permViewCostPrice: 'permViewCostPrice',
+    permChangePayment: 'permChangePayment',
+    permDeleteAudit: 'permDeleteAudit',
+    permBulkUpdate: 'permBulkUpdate',
+    permBackDateSale: 'permBackDateSale',
+    maxDiscount: 'maxDiscount',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -13187,16 +13455,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'DateTime'
+   * Reference to a field of type 'Float'
    */
-  export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
     
 
 
   /**
-   * Reference to a field of type 'Float'
+   * Reference to a field of type 'DateTime'
    */
-  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+  export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
     
 
 
@@ -13220,6 +13488,24 @@ export namespace Prisma {
     name?: StringFilter<"User"> | string
     role?: StringFilter<"User"> | string
     isActive?: BoolFilter<"User"> | boolean
+    permPrintSticker?: BoolFilter<"User"> | boolean
+    permAddItem?: BoolFilter<"User"> | boolean
+    permDeleteProduct?: BoolFilter<"User"> | boolean
+    permVoidSale?: BoolFilter<"User"> | boolean
+    permViewReports?: BoolFilter<"User"> | boolean
+    permEditSettings?: BoolFilter<"User"> | boolean
+    permManageProducts?: BoolFilter<"User"> | boolean
+    permViewSales?: BoolFilter<"User"> | boolean
+    permViewGstReports?: BoolFilter<"User"> | boolean
+    permEditSales?: BoolFilter<"User"> | boolean
+    permManageInventory?: BoolFilter<"User"> | boolean
+    permManageUsers?: BoolFilter<"User"> | boolean
+    permViewCostPrice?: BoolFilter<"User"> | boolean
+    permChangePayment?: BoolFilter<"User"> | boolean
+    permDeleteAudit?: BoolFilter<"User"> | boolean
+    permBulkUpdate?: BoolFilter<"User"> | boolean
+    permBackDateSale?: BoolFilter<"User"> | boolean
+    maxDiscount?: FloatFilter<"User"> | number
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     sales?: SaleListRelationFilter
@@ -13233,6 +13519,24 @@ export namespace Prisma {
     name?: SortOrder
     role?: SortOrder
     isActive?: SortOrder
+    permPrintSticker?: SortOrder
+    permAddItem?: SortOrder
+    permDeleteProduct?: SortOrder
+    permVoidSale?: SortOrder
+    permViewReports?: SortOrder
+    permEditSettings?: SortOrder
+    permManageProducts?: SortOrder
+    permViewSales?: SortOrder
+    permViewGstReports?: SortOrder
+    permEditSales?: SortOrder
+    permManageInventory?: SortOrder
+    permManageUsers?: SortOrder
+    permViewCostPrice?: SortOrder
+    permChangePayment?: SortOrder
+    permDeleteAudit?: SortOrder
+    permBulkUpdate?: SortOrder
+    permBackDateSale?: SortOrder
+    maxDiscount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     sales?: SaleOrderByRelationAggregateInput
@@ -13249,6 +13553,24 @@ export namespace Prisma {
     name?: StringFilter<"User"> | string
     role?: StringFilter<"User"> | string
     isActive?: BoolFilter<"User"> | boolean
+    permPrintSticker?: BoolFilter<"User"> | boolean
+    permAddItem?: BoolFilter<"User"> | boolean
+    permDeleteProduct?: BoolFilter<"User"> | boolean
+    permVoidSale?: BoolFilter<"User"> | boolean
+    permViewReports?: BoolFilter<"User"> | boolean
+    permEditSettings?: BoolFilter<"User"> | boolean
+    permManageProducts?: BoolFilter<"User"> | boolean
+    permViewSales?: BoolFilter<"User"> | boolean
+    permViewGstReports?: BoolFilter<"User"> | boolean
+    permEditSales?: BoolFilter<"User"> | boolean
+    permManageInventory?: BoolFilter<"User"> | boolean
+    permManageUsers?: BoolFilter<"User"> | boolean
+    permViewCostPrice?: BoolFilter<"User"> | boolean
+    permChangePayment?: BoolFilter<"User"> | boolean
+    permDeleteAudit?: BoolFilter<"User"> | boolean
+    permBulkUpdate?: BoolFilter<"User"> | boolean
+    permBackDateSale?: BoolFilter<"User"> | boolean
+    maxDiscount?: FloatFilter<"User"> | number
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     sales?: SaleListRelationFilter
@@ -13262,11 +13584,31 @@ export namespace Prisma {
     name?: SortOrder
     role?: SortOrder
     isActive?: SortOrder
+    permPrintSticker?: SortOrder
+    permAddItem?: SortOrder
+    permDeleteProduct?: SortOrder
+    permVoidSale?: SortOrder
+    permViewReports?: SortOrder
+    permEditSettings?: SortOrder
+    permManageProducts?: SortOrder
+    permViewSales?: SortOrder
+    permViewGstReports?: SortOrder
+    permEditSales?: SortOrder
+    permManageInventory?: SortOrder
+    permManageUsers?: SortOrder
+    permViewCostPrice?: SortOrder
+    permChangePayment?: SortOrder
+    permDeleteAudit?: SortOrder
+    permBulkUpdate?: SortOrder
+    permBackDateSale?: SortOrder
+    maxDiscount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
+    _avg?: UserAvgOrderByAggregateInput
     _max?: UserMaxOrderByAggregateInput
     _min?: UserMinOrderByAggregateInput
+    _sum?: UserSumOrderByAggregateInput
   }
 
   export type UserScalarWhereWithAggregatesInput = {
@@ -13279,6 +13621,24 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"User"> | string
     role?: StringWithAggregatesFilter<"User"> | string
     isActive?: BoolWithAggregatesFilter<"User"> | boolean
+    permPrintSticker?: BoolWithAggregatesFilter<"User"> | boolean
+    permAddItem?: BoolWithAggregatesFilter<"User"> | boolean
+    permDeleteProduct?: BoolWithAggregatesFilter<"User"> | boolean
+    permVoidSale?: BoolWithAggregatesFilter<"User"> | boolean
+    permViewReports?: BoolWithAggregatesFilter<"User"> | boolean
+    permEditSettings?: BoolWithAggregatesFilter<"User"> | boolean
+    permManageProducts?: BoolWithAggregatesFilter<"User"> | boolean
+    permViewSales?: BoolWithAggregatesFilter<"User"> | boolean
+    permViewGstReports?: BoolWithAggregatesFilter<"User"> | boolean
+    permEditSales?: BoolWithAggregatesFilter<"User"> | boolean
+    permManageInventory?: BoolWithAggregatesFilter<"User"> | boolean
+    permManageUsers?: BoolWithAggregatesFilter<"User"> | boolean
+    permViewCostPrice?: BoolWithAggregatesFilter<"User"> | boolean
+    permChangePayment?: BoolWithAggregatesFilter<"User"> | boolean
+    permDeleteAudit?: BoolWithAggregatesFilter<"User"> | boolean
+    permBulkUpdate?: BoolWithAggregatesFilter<"User"> | boolean
+    permBackDateSale?: BoolWithAggregatesFilter<"User"> | boolean
+    maxDiscount?: FloatWithAggregatesFilter<"User"> | number
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
   }
@@ -14078,6 +14438,24 @@ export namespace Prisma {
     name: string
     role: string
     isActive?: boolean
+    permPrintSticker?: boolean
+    permAddItem?: boolean
+    permDeleteProduct?: boolean
+    permVoidSale?: boolean
+    permViewReports?: boolean
+    permEditSettings?: boolean
+    permManageProducts?: boolean
+    permViewSales?: boolean
+    permViewGstReports?: boolean
+    permEditSales?: boolean
+    permManageInventory?: boolean
+    permManageUsers?: boolean
+    permViewCostPrice?: boolean
+    permChangePayment?: boolean
+    permDeleteAudit?: boolean
+    permBulkUpdate?: boolean
+    permBackDateSale?: boolean
+    maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     sales?: SaleCreateNestedManyWithoutUserInput
@@ -14091,6 +14469,24 @@ export namespace Prisma {
     name: string
     role: string
     isActive?: boolean
+    permPrintSticker?: boolean
+    permAddItem?: boolean
+    permDeleteProduct?: boolean
+    permVoidSale?: boolean
+    permViewReports?: boolean
+    permEditSettings?: boolean
+    permManageProducts?: boolean
+    permViewSales?: boolean
+    permViewGstReports?: boolean
+    permEditSales?: boolean
+    permManageInventory?: boolean
+    permManageUsers?: boolean
+    permViewCostPrice?: boolean
+    permChangePayment?: boolean
+    permDeleteAudit?: boolean
+    permBulkUpdate?: boolean
+    permBackDateSale?: boolean
+    maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     sales?: SaleUncheckedCreateNestedManyWithoutUserInput
@@ -14104,6 +14500,24 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    permPrintSticker?: BoolFieldUpdateOperationsInput | boolean
+    permAddItem?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteProduct?: BoolFieldUpdateOperationsInput | boolean
+    permVoidSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSettings?: BoolFieldUpdateOperationsInput | boolean
+    permManageProducts?: BoolFieldUpdateOperationsInput | boolean
+    permViewSales?: BoolFieldUpdateOperationsInput | boolean
+    permViewGstReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSales?: BoolFieldUpdateOperationsInput | boolean
+    permManageInventory?: BoolFieldUpdateOperationsInput | boolean
+    permManageUsers?: BoolFieldUpdateOperationsInput | boolean
+    permViewCostPrice?: BoolFieldUpdateOperationsInput | boolean
+    permChangePayment?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
+    permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
+    permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sales?: SaleUpdateManyWithoutUserNestedInput
@@ -14117,6 +14531,24 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    permPrintSticker?: BoolFieldUpdateOperationsInput | boolean
+    permAddItem?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteProduct?: BoolFieldUpdateOperationsInput | boolean
+    permVoidSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSettings?: BoolFieldUpdateOperationsInput | boolean
+    permManageProducts?: BoolFieldUpdateOperationsInput | boolean
+    permViewSales?: BoolFieldUpdateOperationsInput | boolean
+    permViewGstReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSales?: BoolFieldUpdateOperationsInput | boolean
+    permManageInventory?: BoolFieldUpdateOperationsInput | boolean
+    permManageUsers?: BoolFieldUpdateOperationsInput | boolean
+    permViewCostPrice?: BoolFieldUpdateOperationsInput | boolean
+    permChangePayment?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
+    permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
+    permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sales?: SaleUncheckedUpdateManyWithoutUserNestedInput
@@ -14130,6 +14562,24 @@ export namespace Prisma {
     name: string
     role: string
     isActive?: boolean
+    permPrintSticker?: boolean
+    permAddItem?: boolean
+    permDeleteProduct?: boolean
+    permVoidSale?: boolean
+    permViewReports?: boolean
+    permEditSettings?: boolean
+    permManageProducts?: boolean
+    permViewSales?: boolean
+    permViewGstReports?: boolean
+    permEditSales?: boolean
+    permManageInventory?: boolean
+    permManageUsers?: boolean
+    permViewCostPrice?: boolean
+    permChangePayment?: boolean
+    permDeleteAudit?: boolean
+    permBulkUpdate?: boolean
+    permBackDateSale?: boolean
+    maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -14141,6 +14591,24 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    permPrintSticker?: BoolFieldUpdateOperationsInput | boolean
+    permAddItem?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteProduct?: BoolFieldUpdateOperationsInput | boolean
+    permVoidSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSettings?: BoolFieldUpdateOperationsInput | boolean
+    permManageProducts?: BoolFieldUpdateOperationsInput | boolean
+    permViewSales?: BoolFieldUpdateOperationsInput | boolean
+    permViewGstReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSales?: BoolFieldUpdateOperationsInput | boolean
+    permManageInventory?: BoolFieldUpdateOperationsInput | boolean
+    permManageUsers?: BoolFieldUpdateOperationsInput | boolean
+    permViewCostPrice?: BoolFieldUpdateOperationsInput | boolean
+    permChangePayment?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
+    permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
+    permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -14152,6 +14620,24 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    permPrintSticker?: BoolFieldUpdateOperationsInput | boolean
+    permAddItem?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteProduct?: BoolFieldUpdateOperationsInput | boolean
+    permVoidSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSettings?: BoolFieldUpdateOperationsInput | boolean
+    permManageProducts?: BoolFieldUpdateOperationsInput | boolean
+    permViewSales?: BoolFieldUpdateOperationsInput | boolean
+    permViewGstReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSales?: BoolFieldUpdateOperationsInput | boolean
+    permManageInventory?: BoolFieldUpdateOperationsInput | boolean
+    permManageUsers?: BoolFieldUpdateOperationsInput | boolean
+    permViewCostPrice?: BoolFieldUpdateOperationsInput | boolean
+    permChangePayment?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
+    permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
+    permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -15056,6 +15542,17 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
+  export type FloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[]
+    notIn?: number[]
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[]
@@ -15094,8 +15591,30 @@ export namespace Prisma {
     name?: SortOrder
     role?: SortOrder
     isActive?: SortOrder
+    permPrintSticker?: SortOrder
+    permAddItem?: SortOrder
+    permDeleteProduct?: SortOrder
+    permVoidSale?: SortOrder
+    permViewReports?: SortOrder
+    permEditSettings?: SortOrder
+    permManageProducts?: SortOrder
+    permViewSales?: SortOrder
+    permViewGstReports?: SortOrder
+    permEditSales?: SortOrder
+    permManageInventory?: SortOrder
+    permManageUsers?: SortOrder
+    permViewCostPrice?: SortOrder
+    permChangePayment?: SortOrder
+    permDeleteAudit?: SortOrder
+    permBulkUpdate?: SortOrder
+    permBackDateSale?: SortOrder
+    maxDiscount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type UserAvgOrderByAggregateInput = {
+    maxDiscount?: SortOrder
   }
 
   export type UserMaxOrderByAggregateInput = {
@@ -15105,6 +15624,24 @@ export namespace Prisma {
     name?: SortOrder
     role?: SortOrder
     isActive?: SortOrder
+    permPrintSticker?: SortOrder
+    permAddItem?: SortOrder
+    permDeleteProduct?: SortOrder
+    permVoidSale?: SortOrder
+    permViewReports?: SortOrder
+    permEditSettings?: SortOrder
+    permManageProducts?: SortOrder
+    permViewSales?: SortOrder
+    permViewGstReports?: SortOrder
+    permEditSales?: SortOrder
+    permManageInventory?: SortOrder
+    permManageUsers?: SortOrder
+    permViewCostPrice?: SortOrder
+    permChangePayment?: SortOrder
+    permDeleteAudit?: SortOrder
+    permBulkUpdate?: SortOrder
+    permBackDateSale?: SortOrder
+    maxDiscount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -15116,8 +15653,30 @@ export namespace Prisma {
     name?: SortOrder
     role?: SortOrder
     isActive?: SortOrder
+    permPrintSticker?: SortOrder
+    permAddItem?: SortOrder
+    permDeleteProduct?: SortOrder
+    permVoidSale?: SortOrder
+    permViewReports?: SortOrder
+    permEditSettings?: SortOrder
+    permManageProducts?: SortOrder
+    permViewSales?: SortOrder
+    permViewGstReports?: SortOrder
+    permEditSales?: SortOrder
+    permManageInventory?: SortOrder
+    permManageUsers?: SortOrder
+    permViewCostPrice?: SortOrder
+    permChangePayment?: SortOrder
+    permDeleteAudit?: SortOrder
+    permBulkUpdate?: SortOrder
+    permBackDateSale?: SortOrder
+    maxDiscount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type UserSumOrderByAggregateInput = {
+    maxDiscount?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -15143,6 +15702,22 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedBoolFilter<$PrismaModel>
     _max?: NestedBoolFilter<$PrismaModel>
+  }
+
+  export type FloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[]
+    notIn?: number[]
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -15202,17 +15777,6 @@ export namespace Prisma {
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
-  }
-
-  export type FloatFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[]
-    notIn?: number[]
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatFilter<$PrismaModel> | number
   }
 
   export type CategoryRelationFilter = {
@@ -15294,22 +15858,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
-  }
-
-  export type FloatWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[]
-    notIn?: number[]
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedFloatFilter<$PrismaModel>
-    _min?: NestedFloatFilter<$PrismaModel>
-    _max?: NestedFloatFilter<$PrismaModel>
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -15813,6 +16361,14 @@ export namespace Prisma {
     set?: boolean
   }
 
+  export type FloatFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
   }
@@ -15937,14 +16493,6 @@ export namespace Prisma {
 
   export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null
-  }
-
-  export type FloatFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type CategoryUpdateOneRequiredWithoutProductsNestedInput = {
@@ -16222,6 +16770,17 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
+  export type NestedFloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[]
+    notIn?: number[]
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
   export type NestedDateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[]
@@ -16269,6 +16828,22 @@ export namespace Prisma {
     _max?: NestedBoolFilter<$PrismaModel>
   }
 
+  export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[]
+    notIn?: number[]
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
+  }
+
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[]
@@ -16297,17 +16872,6 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
-  export type NestedFloatFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[]
-    notIn?: number[]
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatFilter<$PrismaModel> | number
-  }
-
   export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | null
@@ -16334,22 +16898,6 @@ export namespace Prisma {
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
-  }
-
-  export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[]
-    notIn?: number[]
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedFloatFilter<$PrismaModel>
-    _min?: NestedFloatFilter<$PrismaModel>
-    _max?: NestedFloatFilter<$PrismaModel>
   }
 
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
@@ -16911,6 +17459,24 @@ export namespace Prisma {
     name: string
     role: string
     isActive?: boolean
+    permPrintSticker?: boolean
+    permAddItem?: boolean
+    permDeleteProduct?: boolean
+    permVoidSale?: boolean
+    permViewReports?: boolean
+    permEditSettings?: boolean
+    permManageProducts?: boolean
+    permViewSales?: boolean
+    permViewGstReports?: boolean
+    permEditSales?: boolean
+    permManageInventory?: boolean
+    permManageUsers?: boolean
+    permViewCostPrice?: boolean
+    permChangePayment?: boolean
+    permDeleteAudit?: boolean
+    permBulkUpdate?: boolean
+    permBackDateSale?: boolean
+    maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     AuditLog?: AuditLogCreateNestedManyWithoutUserInput
@@ -16923,6 +17489,24 @@ export namespace Prisma {
     name: string
     role: string
     isActive?: boolean
+    permPrintSticker?: boolean
+    permAddItem?: boolean
+    permDeleteProduct?: boolean
+    permVoidSale?: boolean
+    permViewReports?: boolean
+    permEditSettings?: boolean
+    permManageProducts?: boolean
+    permViewSales?: boolean
+    permViewGstReports?: boolean
+    permEditSales?: boolean
+    permManageInventory?: boolean
+    permManageUsers?: boolean
+    permViewCostPrice?: boolean
+    permChangePayment?: boolean
+    permDeleteAudit?: boolean
+    permBulkUpdate?: boolean
+    permBackDateSale?: boolean
+    maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     AuditLog?: AuditLogUncheckedCreateNestedManyWithoutUserInput
@@ -16990,6 +17574,24 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    permPrintSticker?: BoolFieldUpdateOperationsInput | boolean
+    permAddItem?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteProduct?: BoolFieldUpdateOperationsInput | boolean
+    permVoidSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSettings?: BoolFieldUpdateOperationsInput | boolean
+    permManageProducts?: BoolFieldUpdateOperationsInput | boolean
+    permViewSales?: BoolFieldUpdateOperationsInput | boolean
+    permViewGstReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSales?: BoolFieldUpdateOperationsInput | boolean
+    permManageInventory?: BoolFieldUpdateOperationsInput | boolean
+    permManageUsers?: BoolFieldUpdateOperationsInput | boolean
+    permViewCostPrice?: BoolFieldUpdateOperationsInput | boolean
+    permChangePayment?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
+    permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
+    permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     AuditLog?: AuditLogUpdateManyWithoutUserNestedInput
@@ -17002,6 +17604,24 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    permPrintSticker?: BoolFieldUpdateOperationsInput | boolean
+    permAddItem?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteProduct?: BoolFieldUpdateOperationsInput | boolean
+    permVoidSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSettings?: BoolFieldUpdateOperationsInput | boolean
+    permManageProducts?: BoolFieldUpdateOperationsInput | boolean
+    permViewSales?: BoolFieldUpdateOperationsInput | boolean
+    permViewGstReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSales?: BoolFieldUpdateOperationsInput | boolean
+    permManageInventory?: BoolFieldUpdateOperationsInput | boolean
+    permManageUsers?: BoolFieldUpdateOperationsInput | boolean
+    permViewCostPrice?: BoolFieldUpdateOperationsInput | boolean
+    permChangePayment?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
+    permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
+    permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     AuditLog?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
@@ -17230,6 +17850,24 @@ export namespace Prisma {
     name: string
     role: string
     isActive?: boolean
+    permPrintSticker?: boolean
+    permAddItem?: boolean
+    permDeleteProduct?: boolean
+    permVoidSale?: boolean
+    permViewReports?: boolean
+    permEditSettings?: boolean
+    permManageProducts?: boolean
+    permViewSales?: boolean
+    permViewGstReports?: boolean
+    permEditSales?: boolean
+    permManageInventory?: boolean
+    permManageUsers?: boolean
+    permViewCostPrice?: boolean
+    permChangePayment?: boolean
+    permDeleteAudit?: boolean
+    permBulkUpdate?: boolean
+    permBackDateSale?: boolean
+    maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     sales?: SaleCreateNestedManyWithoutUserInput
@@ -17242,6 +17880,24 @@ export namespace Prisma {
     name: string
     role: string
     isActive?: boolean
+    permPrintSticker?: boolean
+    permAddItem?: boolean
+    permDeleteProduct?: boolean
+    permVoidSale?: boolean
+    permViewReports?: boolean
+    permEditSettings?: boolean
+    permManageProducts?: boolean
+    permViewSales?: boolean
+    permViewGstReports?: boolean
+    permEditSales?: boolean
+    permManageInventory?: boolean
+    permManageUsers?: boolean
+    permViewCostPrice?: boolean
+    permChangePayment?: boolean
+    permDeleteAudit?: boolean
+    permBulkUpdate?: boolean
+    permBackDateSale?: boolean
+    maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     sales?: SaleUncheckedCreateNestedManyWithoutUserInput
@@ -17270,6 +17926,24 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    permPrintSticker?: BoolFieldUpdateOperationsInput | boolean
+    permAddItem?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteProduct?: BoolFieldUpdateOperationsInput | boolean
+    permVoidSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSettings?: BoolFieldUpdateOperationsInput | boolean
+    permManageProducts?: BoolFieldUpdateOperationsInput | boolean
+    permViewSales?: BoolFieldUpdateOperationsInput | boolean
+    permViewGstReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSales?: BoolFieldUpdateOperationsInput | boolean
+    permManageInventory?: BoolFieldUpdateOperationsInput | boolean
+    permManageUsers?: BoolFieldUpdateOperationsInput | boolean
+    permViewCostPrice?: BoolFieldUpdateOperationsInput | boolean
+    permChangePayment?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
+    permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
+    permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sales?: SaleUpdateManyWithoutUserNestedInput
@@ -17282,6 +17956,24 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    permPrintSticker?: BoolFieldUpdateOperationsInput | boolean
+    permAddItem?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteProduct?: BoolFieldUpdateOperationsInput | boolean
+    permVoidSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSettings?: BoolFieldUpdateOperationsInput | boolean
+    permManageProducts?: BoolFieldUpdateOperationsInput | boolean
+    permViewSales?: BoolFieldUpdateOperationsInput | boolean
+    permViewGstReports?: BoolFieldUpdateOperationsInput | boolean
+    permEditSales?: BoolFieldUpdateOperationsInput | boolean
+    permManageInventory?: BoolFieldUpdateOperationsInput | boolean
+    permManageUsers?: BoolFieldUpdateOperationsInput | boolean
+    permViewCostPrice?: BoolFieldUpdateOperationsInput | boolean
+    permChangePayment?: BoolFieldUpdateOperationsInput | boolean
+    permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
+    permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
+    permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sales?: SaleUncheckedUpdateManyWithoutUserNestedInput

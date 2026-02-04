@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { CreditCard, Trash2, X, Plus, Minus, Scan, Save, Banknote, Smartphone } from 'lucide-react';
+import { CreditCard, Trash2, X, Plus, Minus, Scan, Save, Banknote, Smartphone, Printer } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuthStore } from '../store/authStore';
@@ -8,7 +8,10 @@ import { db } from '../lib/db';
 import { printService } from '../services/print.service';
 import { auditService } from '../services/audit.service';
 
+import { useLocation } from 'react-router-dom';
+
 export const POS: React.FC = () => {
+    const location = useLocation();
     const [shopSettings, setShopSettings] = useState<any>(null);
 
     // Component State
@@ -23,6 +26,7 @@ export const POS: React.FC = () => {
 
     // Post-Sale Edit State
     const [currentSaleId, setCurrentSaleId] = useState<string | null>(null);
+    const [originalPaidAmount, setOriginalPaidAmount] = useState(0);
 
     // New State for Header
     const [customerName, setCustomerName] = useState('Walk-in Customer');
@@ -52,12 +56,59 @@ export const POS: React.FC = () => {
     }, []);
 
     const loadData = async () => {
-        await loadNextBillNo();
+        // Check for sale in location state (Edit/Exchange mode)
+        const saleToEdit = location.state?.sale;
+        if (saleToEdit) {
+            setBillNo(saleToEdit.billNo);
+            setCurrentSaleId(saleToEdit.id);
+            setCustomerName(saleToEdit.customerName || 'Walk-in Customer');
+            setPaymentMethod(saleToEdit.paymentMethod || 'CASH');
+            setPaidAmount(saleToEdit.paidAmount?.toString() || '');
+            setDiscountAmount(saleToEdit.discount?.toString() || '');
+            setOriginalPaidAmount(saleToEdit.paidAmount || 0);
+        } else {
+            await loadNextBillNo();
+        }
+
         await loadProducts();
         await loadShopSettings();
     };
 
     const loadShopSettings = async () => {
+        // Refresh User Permissions on Mount
+        if (user?.id) {
+            try {
+                const res = await window.electronAPI.db.query({
+                    model: 'user',
+                    method: 'findUnique',
+                    args: {
+                        where: { id: user.id },
+                        select: {
+                            id: true,
+                            username: true,
+                            password: true,
+                            name: true,
+                            role: true,
+                            isActive: true,
+                            permPrintSticker: true,
+                            permAddItem: true,
+                            permDeleteProduct: true,
+                            permVoidSale: true,
+                            permViewReports: true,
+                            permEditSettings: true,
+                            maxDiscount: true,
+                        }
+                    }
+                });
+                if (res.success && res.data) {
+                    const { password, ...safeUser } = res.data;
+                    useAuthStore.getState().login(safeUser);
+                }
+            } catch (e) {
+                console.error("Failed to refresh user permissions", e);
+            }
+        }
+
         try {
             const result = await window.electronAPI.db.query({
                 model: 'setting',
@@ -115,6 +166,10 @@ export const POS: React.FC = () => {
             const variant = products.find((p) => p.barcode === trimmedBarcode || p.sku === trimmedBarcode);
 
             if (variant) {
+                if (user?.role !== 'ADMIN' && !user?.permAddItem) {
+                    alert('Permission Denied: You are not allowed to add items to sales.');
+                    return;
+                }
                 addItem({
                     variantId: variant.id,
                     productName: variant.product.name,
@@ -136,6 +191,10 @@ export const POS: React.FC = () => {
     };
 
     const handleProductClick = (variant: any) => {
+        if (user?.role !== 'ADMIN' && !user?.permAddItem) {
+            alert('Permission Denied: You are not allowed to add items to sales.');
+            return;
+        }
         addItem({
             variantId: variant.id,
             productName: variant.product.name,
@@ -172,8 +231,9 @@ export const POS: React.FC = () => {
         const finalTotal = Math.max(0, total - discount); // Ensure no negative total
         const paid = parseFloat(paidAmount) || 0;
         const change = paid - finalTotal;
+        const balanceDue = finalTotal - originalPaidAmount;
 
-        return { subtotal, tax, discount, finalTotal, paid, change };
+        return { subtotal, tax, discount, finalTotal, paid, change, balanceDue };
     };
 
 
@@ -222,6 +282,7 @@ export const POS: React.FC = () => {
         setDiscountAmount('');
         setShowPayment(false);
         setCurrentSaleId(null);
+        setOriginalPaidAmount(0);
         setCustomerName('Walk-in Customer');
         loadNextBillNo();
         loadProducts(); // Refresh stock
@@ -229,10 +290,16 @@ export const POS: React.FC = () => {
         setTimeout(() => barcodeInputRef.current?.focus(), 100);
     };
 
-    const handleCompleteSale = async () => {
+    const handleCompleteSale = async (shouldPrint = true) => {
         if (items.length === 0) return;
 
         const { tax, discount, finalTotal, paid, change } = calculateTotals();
+
+        // Permission: Max Discount Check
+        if (user?.role !== 'ADMIN' && discount > (user?.maxDiscount || 0)) {
+            alert(`Permission Denied: Your maximum allowed discount is ₹${user?.maxDiscount || 0}. You tried to give ₹${discount}.`);
+            return;
+        }
 
         if (paid < finalTotal) {
             alert('Paid amount is less than total!');
@@ -270,11 +337,15 @@ export const POS: React.FC = () => {
                 });
 
                 // Log Activity
-                await auditService.log('SALE_UPDATE', `Updated Sale #${billNo}. Total: ${finalTotal}`);
+                // Log Activity with Before/After details
+                const detail = `Sale #${billNo} Updated (EXCHANGE). BEFORE: ₹${originalPaidAmount.toFixed(2)} | AFTER: ₹${finalTotal.toFixed(2)} | DIFF: ₹${(finalTotal - originalPaidAmount).toFixed(2)}. Customer: ${customerName}`;
+                await auditService.log('SALE_UPDATE', detail);
 
                 // Re-print
-                await printReceipt(sale);
-                alert("Sale Updated & Printed!");
+                if (shouldPrint) {
+                    await printReceipt(sale);
+                }
+                alert("Sale Updated!");
 
             } else {
                 // CREATE NEW SALE
@@ -338,13 +409,19 @@ export const POS: React.FC = () => {
                 }
 
                 // Print receipt
-                await printReceipt(sale);
+                if (shouldPrint) {
+                    await printReceipt(sale);
+                }
 
                 // Log
-                await auditService.log('SALE_CREATE', `Created Sale #${billNo}. Total: ${finalTotal}`);
+                // Log
+                await auditService.log('SALE_CREATE', `New Sale #${billNo} Created. Total: ₹${finalTotal.toFixed(2)}. Customer: ${customerName}`);
 
                 // Set Current Sale ID to allow "Editing"
                 setCurrentSaleId(sale.id);
+
+                // Trigger Cloud Sync (Real-time)
+                db.syncNow().catch(err => console.error('Auto-sync failed:', err));
             }
 
             // DO NOT CLEAR CART - Keep state for review/edit
@@ -373,11 +450,11 @@ export const POS: React.FC = () => {
                     name: item.productName,
                     variantInfo: item.variantInfo,
                     quantity: item.quantity,
-                    mrp: item.mrp,
+                    mrp: item.mrp || 0,
                     rate: item.sellingPrice,
-                    discount: item.discount,
-                    taxRate: item.taxRate,
-                    total: item.total,
+                    discount: item.discount || 0,
+                    taxRate: item.taxRate || 0,
+                    total: item.total || 0,
                 })),
                 subtotal: sale.subtotal,
                 discount: sale.discount,
@@ -387,23 +464,27 @@ export const POS: React.FC = () => {
                 paymentMethod: sale.paymentMethod,
                 paidAmount: sale.paidAmount,
                 changeAmount: sale.changeAmount,
-                userName: user!.name,
+                userName: user?.name || 'Staff',
             };
 
             await printService.printReceipt(receiptData);
         } catch (error) {
             console.error('Failed to print receipt:', error);
+            // Don't alert here to avoid blocking UI if print fails silently
         }
     };
 
     const filteredProducts = products.filter((p) => {
         // Search Filter
         if (!searchQuery) return true;
-        const lowerQuery = searchQuery.toLowerCase();
+        // Normalize: remove all spaces and convert to lowercase
+        const normalize = (str: string) => (str || '').toLowerCase().replace(/\s+/g, '');
+        const query = normalize(searchQuery);
+
         return (
-            p.product.name.toLowerCase().includes(lowerQuery) ||
-            p.barcode.includes(lowerQuery) ||
-            (p.sku && p.sku.toLowerCase().includes(lowerQuery))
+            normalize(p.product.name).includes(query) ||
+            normalize(p.barcode).includes(query) ||
+            (p.sku && normalize(p.sku).includes(query))
         );
     });
 
@@ -556,7 +637,7 @@ export const POS: React.FC = () => {
                                             onClick={handleCheckout}
                                             disabled={items.length === 0}
                                         >
-                                            <CreditCard className="w-6 h-6 mr-2" /> Pay & Print
+                                            <CreditCard className="w-6 h-6" /> Pay & Print
                                         </Button>
                                     </div>
                                 </div>
@@ -570,10 +651,24 @@ export const POS: React.FC = () => {
                                         <div className="font-bold text-gray-500">Subtotal: ₹{subtotal.toFixed(2)}</div>
                                         <div className="font-bold text-gray-500">Tax: ₹{tax.toFixed(2)}</div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="font-bold text-xl">Grand Total:</div>
-                                        <div className="font-bold text-3xl text-primary-600">₹{finalTotal.toFixed(2)}</div>
+                                    {currentSaleId && (
+                                        <div className="flex flex-col items-end border-r pr-4 border-gray-300">
+                                            <div className="text-[10px] uppercase font-bold text-gray-400">Original Paid</div>
+                                            <div className="font-bold text-gray-500">₹{originalPaidAmount.toFixed(2)}</div>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col items-end">
+                                        <div className="text-[10px] uppercase font-bold text-gray-400">Grand Total</div>
+                                        <div className="font-bold text-xl text-primary-600">₹{finalTotal.toFixed(2)}</div>
                                     </div>
+                                    {currentSaleId && (
+                                        <div className="flex flex-col items-end pl-4 border-l border-gray-300">
+                                            <div className="text-[10px] uppercase font-bold text-gray-400">Balance Due</div>
+                                            <div className={`font-bold text-xl ${finalTotal - originalPaidAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                ₹{(finalTotal - originalPaidAmount).toFixed(2)}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Row 2: Inputs & Actions */}
@@ -648,7 +743,8 @@ export const POS: React.FC = () => {
                                                     if (currentSaleId) {
                                                         handleNewSale();
                                                     } else {
-                                                        handleCompleteSale();
+                                                        // Default to Save & Print on Enter
+                                                        handleCompleteSale(true);
                                                     }
                                                 }
                                             }}
@@ -679,17 +775,29 @@ export const POS: React.FC = () => {
                                     )}
 
                                     {/* Complete Button */}
-                                    {(!currentSaleId || user?.role === 'ADMIN') && (
+                                    <div className="flex gap-2 h-full">
+                                        {/* Save Only Button */}
+                                        <Button
+                                            variant="primary"
+                                            className="h-full px-4 text-lg font-bold flex flex-col items-center justify-center min-w-[100px]"
+                                            onClick={() => handleCompleteSale(false)}
+                                            disabled={processing}
+                                        >
+                                            <Save className="w-6 h-6" />
+                                            <span className="text-xs uppercase mt-1">Save</span>
+                                        </Button>
+
+                                        {/* Save & Print Button */}
                                         <Button
                                             variant="success"
                                             className="h-full px-8 text-xl font-bold flex items-center justify-center min-w-[180px]"
-                                            onClick={handleCompleteSale}
+                                            onClick={() => handleCompleteSale(true)}
                                             disabled={processing}
                                         >
-                                            <Save className="w-6 h-6 mr-2" />
-                                            {processing ? 'Saving...' : (currentSaleId ? 'UPDATE & REPRINT' : 'COMPLETE & PRINT')}
+                                            <Printer className="w-6 h-6 mr-2" />
+                                            {processing ? 'Saving...' : (currentSaleId ? 'UPDATE & PRINT' : 'PAY & PRINT')}
                                         </Button>
-                                    )}
+                                    </div>
 
                                     {/* Cancel Button */}
                                     <Button

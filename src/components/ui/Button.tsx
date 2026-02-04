@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'success' | 'danger';
+    variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'outline' | 'ghost';
     size?: 'sm' | 'md' | 'lg';
     children: React.ReactNode;
 }
@@ -18,6 +18,8 @@ export const Button: React.FC<ButtonProps> = ({
         secondary: 'btn-secondary',
         success: 'btn-success',
         danger: 'btn-danger',
+        outline: 'btn-outline',
+        ghost: 'btn-ghost',
     };
 
     const sizeClasses = {

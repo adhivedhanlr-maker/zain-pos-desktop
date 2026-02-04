@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { auditService } from '../services/audit.service';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
-import { Activity, Search, RefreshCw, User, ShieldAlert } from 'lucide-react';
+import { Activity, Search, RefreshCw, User, ShieldAlert, ArrowRight, DollarSign, Clock, Tag } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Skeleton } from '../components/ui/Skeleton';
+import { formatIndianCurrency } from '../lib/format';
 
-// Audit Log Interface based on Prisma model
 interface AuditLog {
     id: string;
     action: string;
@@ -33,7 +33,7 @@ export const ActivityPage: React.FC = () => {
     const loadLogs = async () => {
         setLoading(true);
         try {
-            const data = await auditService.getLogs(100); // Create getLogs in service if needed or use existing
+            const data = await auditService.getLogs(100);
             setLogs(data);
         } catch (error) {
             console.error('Failed to load logs:', error);
@@ -42,14 +42,14 @@ export const ActivityPage: React.FC = () => {
         }
     };
 
-    const actionColors: Record<string, string> = {
-        'SALE_CREATE': 'text-green-600 bg-green-50 border-green-200',
-        'SALE_UPDATE': 'text-blue-600 bg-blue-50 border-blue-200',
-        'SALE_VOID': 'text-red-600 bg-red-50 border-red-200',
-        'STOCK_ADD': 'text-purple-600 bg-purple-50 border-purple-200',
-        'STOCK_ADJUST': 'text-orange-600 bg-orange-50 border-orange-200',
-        'PRODUCT_DELETE': 'text-red-600 bg-red-50 border-red-200',
-        'USER_LOGIN': 'text-gray-600 bg-gray-50 border-gray-200',
+    const actionStyles: Record<string, { color: string, icon: any }> = {
+        'SALE_CREATE': { color: 'bg-green-100 text-green-700 border-green-200', icon: DollarSign },
+        'SALE_UPDATE': { color: 'bg-blue-100 text-blue-700 border-blue-200', icon: RefreshCw },
+        'SALE_VOID': { color: 'bg-red-100 text-red-700 border-red-200', icon: ShieldAlert },
+        'STOCK_ADD': { color: 'bg-purple-100 text-purple-700 border-purple-200', icon: Tag },
+        'STOCK_ADJUST': { color: 'bg-orange-100 text-orange-700 border-orange-200', icon: Tag },
+        'PRODUCT_DELETE': { color: 'bg-red-100 text-red-700 border-red-200', icon: Activity },
+        'USER_LOGIN': { color: 'bg-gray-100 text-gray-700 border-gray-200', icon: User },
     };
 
     const filteredLogs = logs.filter(log =>
@@ -58,89 +58,166 @@ export const ActivityPage: React.FC = () => {
         log.action.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Simple parser for detailed logs (like the new Exchange log)
+    const renderParsedDetails = (details: string, action: string) => {
+        if (action === 'SALE_UPDATE' && details.includes('BEFORE:')) {
+            // Updated Sale #1 Updated (EXCHANGE). BEFORE: ₹10.00 | AFTER: ₹20.00 | DIFF: ₹10.00. Customer: Name
+            const parts = details.split('|');
+            const before = parts[0]?.split('BEFORE:')[1]?.trim();
+            const after = parts[1]?.split('AFTER:')[1]?.trim();
+            const diff = parts[2]?.split('DIFF:')[1]?.trim();
+            const customer = details.split('Customer:')[1]?.trim();
+            const billInfo = details.split('Updated')[0]?.trim();
+
+            return (
+                <div className="space-y-3 mt-2">
+                    <div className="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-300">
+                        <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] uppercase">Exchange</span>
+                        {billInfo}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
+                            <div className="text-[10px] text-gray-400 uppercase font-bold">Previous</div>
+                            <div className="text-sm font-semibold text-gray-600 line-through">{before}</div>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
+                            <div className="text-[10px] text-gray-400 uppercase font-bold">New Total</div>
+                            <div className="text-sm font-semibold text-green-600">{after}</div>
+                        </div>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded border border-blue-100 dark:border-blue-800">
+                            <div className="text-[10px] text-blue-400 uppercase font-bold">Difference</div>
+                            <div className="text-sm font-bold text-blue-600">{diff}</div>
+                        </div>
+                    </div>
+                    {customer && (
+                        <div className="text-xs text-gray-500 italic">
+                            Customer: {customer}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        return <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{details}</p>;
+    };
+
     if (user?.role !== 'ADMIN') {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <ShieldAlert className="w-16 h-16 mb-4 text-red-400" />
-                <h2 className="text-xl font-bold text-gray-700">Access Denied</h2>
-                <p>You do not have permission to view activity logs.</p>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+                <div className="bg-red-50 p-6 rounded-full mb-4">
+                    <ShieldAlert className="w-16 h-16 text-red-500" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+                <p className="text-gray-500 max-w-sm">
+                    Only administrators can view the system activity logs.
+                    Please contact your manager if you need access.
+                </p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Activity className="w-6 h-6" />
-                    Activity Log
-                </h1>
-                <Button variant="secondary" onClick={loadLogs} title="Refresh Logs">
-                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </Button>
-            </div>
+        <div className="max-w-5xl mx-auto space-y-6 pb-10">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
+                        <div className="bg-primary-600 p-2 rounded-xl text-white shadow-lg shadow-primary-200">
+                            <Activity className="w-6 h-6" />
+                        </div>
+                        Activity Tracker
+                    </h1>
+                    <p className="text-gray-500 mt-1 ml-11">Monitor all system actions and transaction updates</p>
+                </div>
 
-            {/* Search */}
-            <div className="max-w-md">
-                <div className="relative">
-                    <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                    <Input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search logs..."
-                        className="pl-10"
-                    />
+                <div className="flex items-center gap-2">
+                    <div className="relative group">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search by action, user, or bill..."
+                            className="pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none w-full md:w-80 shadow-sm transition-all"
+                        />
+                    </div>
+                    <Button
+                        variant="secondary"
+                        onClick={loadLogs}
+                        className="bg-white hover:bg-gray-50 dark:bg-gray-800 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm"
+                    >
+                        <RefreshCw className={`w-5 h-5 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
                 </div>
             </div>
 
+            {/* List Header */}
+            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-400 px-2">
+                <span>Timeline of Events</span>
+                <span>Latest First</span>
+            </div>
+
             {/* Logs List */}
-            <div className="space-y-4">
+            <div className="space-y-3 relative">
+                {/* Vertical Timeline Line */}
+                <div className="absolute left-7 top-0 bottom-0 w-0.5 bg-gray-100 dark:bg-gray-800 -z-10 hidden sm:block"></div>
+
                 {loading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="card p-4 flex items-center gap-4">
-                            <Skeleton className="w-10 h-10 rounded-full" />
+                    Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-center gap-4 animate-pulse">
+                            <div className="w-12 h-12 bg-gray-100 rounded-xl" />
                             <div className="flex-1 space-y-2">
-                                <Skeleton className="h-4 w-1/3" />
-                                <Skeleton className="h-3 w-1/2" />
+                                <div className="h-4 bg-gray-100 w-1/4 rounded" />
+                                <div className="h-3 bg-gray-50 w-2/3 rounded" />
                             </div>
                         </div>
                     ))
                 ) : filteredLogs.length > 0 ? (
-                    filteredLogs.map((log) => (
-                        <div key={log.id} className="card p-4 hover:shadow-md transition-shadow">
-                            <div className="flex items-start gap-4">
-                                <div className={`p-2 rounded-lg border ${actionColors[log.action] || 'text-gray-600 bg-gray-50 border-gray-200'}`}>
-                                    <Activity className="w-5 h-5" />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between items-start">
-                                        <h3 className="font-semibold text-gray-800 dark:text-gray-200">
-                                            {log.action.replace(/_/g, ' ')}
-                                        </h3>
-                                        <span className="text-xs text-gray-500 font-medium">
-                                            {format(new Date(log.createdAt), 'dd MMM yyyy HH:mm:ss')}
-                                        </span>
+                    filteredLogs.map((log) => {
+                        const style = actionStyles[log.action] || { color: 'bg-gray-50 text-gray-600 border-gray-200', icon: Activity };
+                        const Icon = style.icon;
+
+                        return (
+                            <div key={log.id} className="group bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-primary-100 dark:hover:border-primary-900 transition-all">
+                                <div className="flex items-start gap-4">
+                                    {/* Action Icon */}
+                                    <div className={`flex-shrink-0 w-12 h-12 rounded-xl border ${style.color} flex items-center justify-center shadow-inner`}>
+                                        <Icon className="w-6 h-6" />
                                     </div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                        {log.details}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                                        <User className="w-3 h-3" />
-                                        <span>{log.user?.name || 'System'}</span>
-                                        {log.user?.role && (
-                                            <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 border border-gray-200">
-                                                {log.user.role}
-                                            </span>
-                                        )}
+
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-bold text-gray-900 dark:text-gray-100 capitalize">
+                                                    {log.action.toLowerCase().replace(/_/g, ' ')}
+                                                </h3>
+                                                <span className="hidden sm:inline text-gray-300">•</span>
+                                                <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">
+                                                    <User className="w-3 h-3" />
+                                                    {log.user?.name || 'System'}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-xs text-gray-400 font-mono">
+                                                <Clock className="w-3 h-3" />
+                                                {format(new Date(log.createdAt), 'dd MMM, hh:mm:ss a')}
+                                            </div>
+                                        </div>
+
+                                        {/* Parsed Details Area */}
+                                        <div className="bg-white dark:bg-gray-800">
+                                            {renderParsedDetails(log.details, log.action)}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 ) : (
-                    <div className="text-center py-10 text-gray-500">
-                        No activity logs found.
+                    <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200 text-gray-400">
+                        <Activity className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                        <p className="text-lg font-medium">No activity to show</p>
+                        <p className="text-sm">Try adjusting your search query</p>
                     </div>
                 )}
             </div>

@@ -48,16 +48,16 @@ export const StickerPrintModal: React.FC<StickerPrintModalProps> = ({
     const [shopSettings, setShopSettings] = useState<any>({ shopName: 'Zain POS' });
     const [showConfig, setShowConfig] = useState(false);
 
-    // Print Configuration State
+    // Print Configuration State (Defaults updated to match user's physical configuration)
     const [config, setConfig] = useState({
-        width: 38,      // mm
-        height: 25,     // mm
+        width: 32,      // mm
+        height: 18,     // mm
         perRow: 2,
-        gapX: 4,        // mm
-        gapY: 2,         // mm
-        marginLeft: 4,
-        marginTop: 1,
-        contentScale: 100 // Percentage
+        gapX: 2,        // mm
+        gapY: 1,         // mm
+        marginLeft: 2,
+        marginTop: 0,
+        contentScale: 75 // Percentage
     });
 
 
@@ -66,21 +66,16 @@ export const StickerPrintModal: React.FC<StickerPrintModalProps> = ({
     useEffect(() => {
         if (isOpen) {
             loadSettings();
-            // Try to load saved config from localStorage
-            const savedConfig = localStorage.getItem('sticker_print_config');
-            if (savedConfig) {
-                try {
-                    setConfig(JSON.parse(savedConfig));
-                } catch (e) { console.error("Failed to parse saved config", e); }
-            }
         }
     }, [isOpen]);
 
+    // Load saved settings
     const loadSettings = async () => {
         try {
-            const [layoutResult, shopResult] = await Promise.all([
+            const [layoutResult, shopResult, configResult] = await Promise.all([
                 db.settings.findUnique({ where: { key: 'LABEL_LAYOUT' } }),
-                db.settings.findUnique({ where: { key: 'SHOP_SETTINGS' } })
+                db.settings.findUnique({ where: { key: 'SHOP_SETTINGS' } }),
+                db.settings.findUnique({ where: { key: 'STICKER_PRINT_CONFIG' } })
             ]);
 
             if (layoutResult && layoutResult.value) {
@@ -90,15 +85,13 @@ export const StickerPrintModal: React.FC<StickerPrintModalProps> = ({
             if (shopResult && shopResult.value) {
                 setShopSettings(JSON.parse(shopResult.value));
             }
+
+            if (configResult && configResult.value) {
+                setConfig(JSON.parse(configResult.value));
+            }
         } catch (error) {
             console.error('Failed to load settings:', error);
         }
-    };
-
-    // Save config when it changes
-    const updateConfig = (newConfig: typeof config) => {
-        setConfig(newConfig);
-        localStorage.setItem('sticker_print_config', JSON.stringify(newConfig));
     };
 
     // Render barcode for preview
@@ -316,94 +309,10 @@ export const StickerPrintModal: React.FC<StickerPrintModalProps> = ({
         <Modal isOpen={isOpen} onClose={onClose} title="Print Product Sticker">
             <div className="space-y-4">
 
-                {/* Print Configuration Toggle */}
-                <div className="flex justify-between items-center cursor-pointer bg-gray-50 dark:bg-gray-800 p-2 rounded" onClick={() => setShowConfig(!showConfig)}>
-                    <div className="flex items-center gap-2">
-                        <Settings className="w-4 h-4" />
-                        <span className="text-sm font-medium">Print Settings ({config.width}x{config.height}mm - {config.perRow} Up)</span>
-                    </div>
-                    {showConfig ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                    <Settings className="w-4 h-4 text-blue-600" />
+                    <span className="text-xs font-semibold text-blue-700 uppercase">Printer Calibration: {config.width}x{config.height}mm</span>
                 </div>
-
-                {/* Configuration Panel */}
-                {showConfig && (
-                    <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-800 p-4 rounded text-sm mb-4">
-                        <div>
-                            <label className="block text-xs font-bold mb-1">Sticker Width (mm)</label>
-                            <input
-                                type="number"
-                                value={config.width}
-                                onChange={(e) => updateConfig({ ...config, width: Number(e.target.value) })}
-                                className="w-full px-2 py-1 border rounded"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold mb-1">Sticker Height (mm)</label>
-                            <input
-                                type="number"
-                                value={config.height}
-                                onChange={(e) => updateConfig({ ...config, height: Number(e.target.value) })}
-                                className="w-full px-2 py-1 border rounded"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold mb-1">Stickers Per Row</label>
-                            <input
-                                type="number"
-                                value={config.perRow}
-                                onChange={(e) => updateConfig({ ...config, perRow: Number(e.target.value) })}
-                                className="w-full px-2 py-1 border rounded"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold mb-1">Gap Between (mm)</label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="number"
-                                    placeholder="X"
-                                    value={config.gapX}
-                                    onChange={(e) => updateConfig({ ...config, gapX: Number(e.target.value) })}
-                                    className="w-full px-2 py-1 border rounded"
-                                />
-                                <input
-                                    type="number"
-                                    placeholder="Y"
-                                    value={config.gapY}
-                                    onChange={(e) => updateConfig({ ...config, gapY: Number(e.target.value) })}
-                                    className="w-full px-2 py-1 border rounded"
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold mb-1">Margins (L / T) (mm)</label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="number"
-                                    placeholder="Left"
-                                    value={config.marginLeft}
-                                    onChange={(e) => updateConfig({ ...config, marginLeft: Number(e.target.value) })}
-                                    className="w-full px-2 py-1 border rounded"
-                                />
-                                <input
-                                    type="number"
-                                    placeholder="Top"
-                                    value={config.marginTop}
-                                    onChange={(e) => updateConfig({ ...config, marginTop: Number(e.target.value) })}
-                                    className="w-full px-2 py-1 border rounded"
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold mb-1">Content Zoom (%)</label>
-                            <input
-                                type="number"
-                                value={config.contentScale}
-                                onChange={(e) => updateConfig({ ...config, contentScale: Number(e.target.value) })}
-                                className="w-full px-2 py-1 border rounded"
-                            />
-                        </div>
-                    </div>
-                )}
 
                 {/* Preview */}
                 <div className="flex justify-center bg-gray-100 dark:bg-gray-900 p-4 rounded overflow-hidden">

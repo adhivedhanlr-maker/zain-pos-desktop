@@ -64,7 +64,7 @@ export const Customers: React.FC = () => {
                     </div>
                 </div>
                 <Button variant="primary" onClick={() => setShowModal(true)}>
-                    <Plus className="w-5 h-5 mr-2" />
+                    <Plus className="w-5 h-5" />
                     Add Customer
                 </Button>
             </div>

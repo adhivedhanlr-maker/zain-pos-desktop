@@ -5,6 +5,25 @@ interface User {
     username: string;
     name: string;
     role: string;
+    permPrintSticker: boolean;
+    permAddItem: boolean;
+    permDeleteProduct: boolean;
+    permVoidSale: boolean;
+    permViewReports: boolean;
+    permViewSales: boolean;
+    permViewGstReports: boolean;
+    permManageProducts: boolean;
+    permEditSettings: boolean;
+    permEditSales: boolean;
+    permManageInventory: boolean;
+    permManageUsers: boolean;
+    permViewCostPrice: boolean;
+    permChangePayment: boolean;
+    permDeleteAudit: boolean;
+    permBulkUpdate: boolean;
+    permBackDateSale: boolean;
+    permViewInsights: boolean;
+    maxDiscount: number;
 }
 
 interface AuthState {

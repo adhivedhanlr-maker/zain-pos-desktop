@@ -10,6 +10,8 @@ import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { ActivityPage } from './pages/Activity';
 import { Users } from './pages/Users';
+import { Permissions } from './pages/Permissions';
+import { Forecasting } from './pages/Forecasting';
 import { MainLayout } from './components/Layout/MainLayout';
 import { useAuthStore } from './store/authStore';
 
@@ -39,7 +41,9 @@ function App() {
                     <Route path="reports" element={<Reports />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="users" element={<Users />} />
+                    <Route path="permissions" element={<Permissions />} />
                     <Route path="activity" element={<ActivityPage />} />
+                    <Route path="forecasting" element={<Forecasting />} />
                 </Route>
             </Routes>
         </HashRouter>

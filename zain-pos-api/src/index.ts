@@ -7,6 +7,7 @@ import salesRoutes from './routes/sales';
 import inventoryRoutes from './routes/inventory';
 import invoicesRoutes from './routes/invoices';
 import reportsRoutes from './routes/reports';
+import syncRoutes from './routes/sync';
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/invoices', invoicesRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/sync', syncRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

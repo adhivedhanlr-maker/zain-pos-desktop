@@ -14,6 +14,8 @@ import {
     X,
     Activity,
     UserCog,
+    Shield,
+    BrainCircuit,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
@@ -22,7 +24,65 @@ export const MainLayout: React.FC = () => {
     const [sidebarOpen, setSidebarOpen] = React.useState(true);
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout } = useAuthStore();
+    const { user, login, logout } = useAuthStore();
+
+    // Real-time Permission Sync
+    React.useEffect(() => {
+        if (!user?.id) return;
+
+        const interval = setInterval(async () => {
+            try {
+                // Direct DB query to get latest permissions
+                const res = await window.electronAPI.db.query({
+                    model: 'user',
+                    method: 'findUnique',
+                    args: {
+                        where: { id: user.id },
+                        select: {
+                            id: true,
+                            username: true,
+                            password: true,
+                            name: true,
+                            role: true,
+                            isActive: true,
+                            permPrintSticker: true,
+                            permAddItem: true,
+                            permDeleteProduct: true,
+                            permVoidSale: true,
+                            permViewReports: true,
+                            permViewSales: true,
+                            permViewGstReports: true,
+                            permManageProducts: true,
+                            permEditSettings: true,
+                            permEditSales: true,
+                            permManageInventory: true,
+                            permManageUsers: true,
+                            permViewCostPrice: true,
+                            permChangePayment: true,
+                            permDeleteAudit: true,
+                            permBulkUpdate: true,
+                            permBackDateSale: true,
+                            permViewInsights: true,
+                            maxDiscount: true,
+                        }
+                    }
+                });
+
+                if (res.success && res.data) {
+                    const freshUser = res.data;
+
+                    // Sanitize (remove password)
+                    const { password, ...safeUser } = freshUser;
+
+                    login(safeUser);
+                }
+            } catch (error) {
+                console.error('Permission sync failed:', error);
+            }
+        }, 2000); // Check every 2 seconds
+
+        return () => clearInterval(interval);
+    }, [user?.id]);
 
     React.useEffect(() => {
         if (darkMode) {
@@ -38,19 +98,23 @@ export const MainLayout: React.FC = () => {
     };
 
     const menuItems = [
-        { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/', icon: LayoutDashboard, label: 'Dashboard', adminOnly: true, requiredPerm: 'permViewReports' },
         { path: '/pos', icon: ShoppingCart, label: 'Point of Sale' },
-        { path: '/products', icon: Package, label: 'Products', adminOnly: true },
+        { path: '/forecasting', icon: BrainCircuit, label: 'AI Forecaster', adminOnly: true, requiredPerm: 'permViewInsights' },
+        { path: '/products', icon: Package, label: 'Products', adminOnly: true, requiredPerm: 'permManageProducts' },
         { path: '/customers', icon: Users, label: 'Customers' },
-        { path: '/sales', icon: FileText, label: 'Sales History', adminOnly: true },
-        { path: '/reports', icon: FileText, label: 'Reports', adminOnly: true },
+        { path: '/sales', icon: FileText, label: 'Sales History', adminOnly: true, requiredPerm: 'permViewSales' },
+        { path: '/reports', icon: FileText, label: 'GST Reports', adminOnly: true, requiredPerm: 'permViewGstReports' },
         { path: '/users', icon: UserCog, label: 'User Management', adminOnly: true },
+        { path: '/permissions', icon: Shield, label: 'User Permissions', adminOnly: true },
         { path: '/activity', icon: Activity, label: 'Activity Log', adminOnly: true },
         { path: '/settings', icon: Settings, label: 'Settings', adminOnly: true },
     ];
 
     const filteredMenuItems = menuItems.filter(
-        (item) => !item.adminOnly || user?.role === 'ADMIN'
+        (item) => !item.adminOnly ||
+            user?.role === 'ADMIN' ||
+            (item.requiredPerm && (user as any)?.[item.requiredPerm])
     );
 
     return (
