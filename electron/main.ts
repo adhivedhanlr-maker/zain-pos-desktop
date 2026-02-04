@@ -103,7 +103,7 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        title: "!!! ZAIN POS FIXED V3 !!!",
+        title: "ZAIN GENTS PALACE - POS System",
         width: 1400,
         height: 900,
         minWidth: 1200,
@@ -116,11 +116,7 @@ function createWindow() {
             sandbox: false,
         },
         autoHideMenuBar: true,
-        icon: fs.existsSync(path.join(__dirname, '../public/icon.jpg'))
-            ? path.join(__dirname, '../public/icon.jpg')
-            : (fs.existsSync(path.join(__dirname, '../public/icon.png'))
-                ? path.join(__dirname, '../public/icon.png')
-                : undefined),
+        icon: path.join(__dirname, '../public/icon.ico'),
     });
 
     // Add deep debugging listeners

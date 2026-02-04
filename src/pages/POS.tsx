@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { CreditCard, Printer, Trash2, X, Plus, Minus, Scan, Save, Banknote, Smartphone } from 'lucide-react';
+import { CreditCard, Trash2, X, Plus, Minus, Scan, Save, Banknote, Smartphone } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuthStore } from '../store/authStore';
@@ -176,44 +176,45 @@ export const POS: React.FC = () => {
         return { subtotal, tax, discount, finalTotal, paid, change };
     };
 
-    const handlePrintDraft = async () => {
-        const { subtotal, tax, discount, finalTotal, paid, change } = calculateTotals();
 
-        try {
-            // Prepare Receipt Data (Mock Sale Object)
-            const receiptData = {
-                billNo: 'DRAFT', // Indicator
-                date: new Date(),
-                shopName: 'ZAIN GENTS PALACE',
-                shopAddress: 'CHIRAMMAL TOWER, BEHIND CANARA BANK\nRAJA ROAD, NILESHWAR',
-                shopPhone: '9037106449, 7907026827',
-                gstin: '32PVGPS0686J1ZV',
-                customerName: customerName || 'Walk-in Customer (Draft)',
-                items: items.map((item: any) => ({
-                    name: item.productName,
-                    variantInfo: item.variantInfo,
-                    quantity: item.quantity,
-                    mrp: item.mrp,
-                    rate: item.sellingPrice,
-                    total: item.sellingPrice * item.quantity - item.discount,
-                })),
-                subtotal,
-                discount, // Global discount
-                cgst: tax / 2,
-                sgst: tax / 2,
-                grandTotal: finalTotal,
-                paymentMethod: 'CASH',
-                paidAmount: paid,
-                changeAmount: change,
-                userName: user!.name,
-            };
+    // const handlePrintDraft = async () => {
+    //     const { subtotal, tax, discount, finalTotal, paid, change } = calculateTotals();
 
-            await printService.printReceipt(receiptData);
-        } catch (error) {
-            console.error("Draft print failed", error);
-            alert("Draft print failed");
-        }
-    };
+    //     try {
+    //         // Prepare Receipt Data (Mock Sale Object)
+    //         const receiptData = {
+    //             billNo: 'DRAFT', // Indicator
+    //             date: new Date(),
+    //             shopName: 'ZAIN GENTS PALACE',
+    //             shopAddress: 'CHIRAMMAL TOWER, BEHIND CANARA BANK\nRAJA ROAD, NILESHWAR',
+    //             shopPhone: '9037106449, 7907026827',
+    //             gstin: '32PVGPS0686J1ZV',
+    //             customerName: customerName || 'Walk-in Customer (Draft)',
+    //             items: items.map((item: any) => ({
+    //                 name: item.productName,
+    //                 variantInfo: item.variantInfo,
+    //                 quantity: item.quantity,
+    //                 mrp: item.mrp,
+    //                 rate: item.sellingPrice,
+    //                 total: item.sellingPrice * item.quantity - item.discount,
+    //             })),
+    //             subtotal,
+    //             discount, // Global discount
+    //             cgst: tax / 2,
+    //             sgst: tax / 2,
+    //             grandTotal: finalTotal,
+    //             paymentMethod: 'CASH',
+    //             paidAmount: paid,
+    //             changeAmount: change,
+    //             userName: user!.name,
+    //         };
+
+    //         await printService.printReceipt(receiptData);
+    //     } catch (error) {
+    //         console.error("Draft print failed", error);
+    //         alert("Draft print failed");
+    //     }
+    // };
 
     const handleNewSale = () => {
         clearCart();

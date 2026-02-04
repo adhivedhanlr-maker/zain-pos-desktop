@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { auditService, AuditAction } from '../services/audit.service';
+import { auditService } from '../services/audit.service';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { Activity, Search, RefreshCw, User, ShieldAlert } from 'lucide-react';

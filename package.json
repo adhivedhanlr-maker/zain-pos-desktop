@@ -62,7 +62,7 @@
   },
   "build": {
     "appId": "com.zaingentspalace.pos",
-    "productName": "Zain-POS-V3",
+    "productName": "ZAIN GENTS PALACE POS",
     "directories": {
       "output": "release"
     },
@@ -86,10 +86,11 @@
     ],
     "win": {
       "target": [
-        "dir"
+        "nsis"
       ],
-      "icon": "public/icon.png",
+      "icon": "build/icon.ico",
       "forceCodeSigning": false,
+      "signAndEditExecutable": false,
       "asarUnpack": [
         "node_modules/.prisma",
         "node_modules/@prisma/engines"
@@ -99,7 +100,10 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "shortcutName": "ZAIN GENTS PALACE POS"
     }
   }
 }

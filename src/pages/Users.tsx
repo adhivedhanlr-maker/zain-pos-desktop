@@ -30,7 +30,6 @@ const PasswordInput = ({ label, value, onChange, disabled = false }: { label: st
 
 export const Users: React.FC = () => {
     const [users, setUsers] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
     // Modals
@@ -58,7 +57,6 @@ export const Users: React.FC = () => {
     }, []);
 
     const loadUsers = async () => {
-        setIsLoading(true);
         try {
             const res = await window.electronAPI.users.list();
             if (res.success) {
@@ -66,8 +64,6 @@ export const Users: React.FC = () => {
             }
         } catch (error) {
             console.error(error);
-        } finally {
-            setIsLoading(false);
         }
     };
 
