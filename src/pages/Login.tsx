@@ -119,12 +119,14 @@ export const Login: React.FC = () => {
                         </Button>
                     </form>
 
-                    <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-                        <p>Default credentials:</p>
-                        <p className="font-mono mt-1">
-                            Username: <span className="font-semibold">admin</span> | Password:{' '}
-                            <span className="font-semibold">admin123</span>
-                        </p>
+                    <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+                        <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
+                            <p>Default credentials:</p>
+                            <p className="font-mono mt-1">
+                                Username: <span className="font-semibold">admin</span> | Password:{' '}
+                                <span className="font-semibold">admin123</span>
+                            </p>
+                        </div>
                     </div>
                 </div>
 

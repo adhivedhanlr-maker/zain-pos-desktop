@@ -458,7 +458,7 @@ export const Settings: React.FC = () => {
                                         <h4 className="font-bold">Bulk Import</h4>
                                         <p className="text-sm text-gray-500">Upload your filled Excel template to bulk add products.</p>
                                     </div>
-                                    <Button variant="outline" className="w-full mt-auto" onClick={() => window.electronAPI.data.importProducts()}>
+                                    <Button variant="outline" className="w-full mt-auto" onClick={() => window.electronAPI.data.importAll()}>
                                         Import Data
                                     </Button>
                                 </div>

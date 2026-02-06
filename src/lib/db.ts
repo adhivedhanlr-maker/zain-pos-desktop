@@ -38,6 +38,7 @@ class DatabaseService {
         findMany: (args?: any) => this.query('productVariant', 'findMany', args),
         create: (args: any) => this.query('productVariant', 'create', args),
         update: (args: any) => this.query('productVariant', 'update', args),
+        updateMany: (args: any) => this.query('productVariant', 'updateMany', args),
         delete: (args: any) => this.query('productVariant', 'delete', args),
         deleteMany: (args: any) => this.query('productVariant', 'deleteMany', args),
     };

@@ -22,6 +22,7 @@ const api = {
     data: {
         downloadProductTemplate: () => ipcRenderer.invoke('products:importTemplate'), // Maps to products:importTemplate
         importProducts: () => ipcRenderer.invoke('products:import'),          // Maps to products:import
+        importAll: () => ipcRenderer.invoke('data:importAll'),
         exportAll: () => ipcRenderer.invoke('data:exportAll'),                // Maps to data:exportAll
     },
 

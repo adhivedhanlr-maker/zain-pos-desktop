@@ -1919,6 +1919,7 @@ export namespace Prisma {
     permDeleteAudit: boolean | null
     permBulkUpdate: boolean | null
     permBackDateSale: boolean | null
+    permViewInsights: boolean | null
     maxDiscount: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -1948,6 +1949,7 @@ export namespace Prisma {
     permDeleteAudit: boolean | null
     permBulkUpdate: boolean | null
     permBackDateSale: boolean | null
+    permViewInsights: boolean | null
     maxDiscount: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -1977,6 +1979,7 @@ export namespace Prisma {
     permDeleteAudit: number
     permBulkUpdate: number
     permBackDateSale: number
+    permViewInsights: number
     maxDiscount: number
     createdAt: number
     updatedAt: number
@@ -2016,6 +2019,7 @@ export namespace Prisma {
     permDeleteAudit?: true
     permBulkUpdate?: true
     permBackDateSale?: true
+    permViewInsights?: true
     maxDiscount?: true
     createdAt?: true
     updatedAt?: true
@@ -2045,6 +2049,7 @@ export namespace Prisma {
     permDeleteAudit?: true
     permBulkUpdate?: true
     permBackDateSale?: true
+    permViewInsights?: true
     maxDiscount?: true
     createdAt?: true
     updatedAt?: true
@@ -2074,6 +2079,7 @@ export namespace Prisma {
     permDeleteAudit?: true
     permBulkUpdate?: true
     permBackDateSale?: true
+    permViewInsights?: true
     maxDiscount?: true
     createdAt?: true
     updatedAt?: true
@@ -2190,6 +2196,7 @@ export namespace Prisma {
     permDeleteAudit: boolean
     permBulkUpdate: boolean
     permBackDateSale: boolean
+    permViewInsights: boolean
     maxDiscount: number
     createdAt: Date
     updatedAt: Date
@@ -2238,6 +2245,7 @@ export namespace Prisma {
     permDeleteAudit?: boolean
     permBulkUpdate?: boolean
     permBackDateSale?: boolean
+    permViewInsights?: boolean
     maxDiscount?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -2270,6 +2278,7 @@ export namespace Prisma {
     permDeleteAudit?: boolean
     permBulkUpdate?: boolean
     permBackDateSale?: boolean
+    permViewInsights?: boolean
     maxDiscount?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -2299,6 +2308,7 @@ export namespace Prisma {
     permDeleteAudit?: boolean
     permBulkUpdate?: boolean
     permBackDateSale?: boolean
+    permViewInsights?: boolean
     maxDiscount?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -2341,6 +2351,7 @@ export namespace Prisma {
       permDeleteAudit: boolean
       permBulkUpdate: boolean
       permBackDateSale: boolean
+      permViewInsights: boolean
       maxDiscount: number
       createdAt: Date
       updatedAt: Date
@@ -2762,6 +2773,7 @@ export namespace Prisma {
     readonly permDeleteAudit: FieldRef<"User", 'Boolean'>
     readonly permBulkUpdate: FieldRef<"User", 'Boolean'>
     readonly permBackDateSale: FieldRef<"User", 'Boolean'>
+    readonly permViewInsights: FieldRef<"User", 'Boolean'>
     readonly maxDiscount: FieldRef<"User", 'Float'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
@@ -13257,6 +13269,7 @@ export namespace Prisma {
     permDeleteAudit: 'permDeleteAudit',
     permBulkUpdate: 'permBulkUpdate',
     permBackDateSale: 'permBackDateSale',
+    permViewInsights: 'permViewInsights',
     maxDiscount: 'maxDiscount',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -13505,6 +13518,7 @@ export namespace Prisma {
     permDeleteAudit?: BoolFilter<"User"> | boolean
     permBulkUpdate?: BoolFilter<"User"> | boolean
     permBackDateSale?: BoolFilter<"User"> | boolean
+    permViewInsights?: BoolFilter<"User"> | boolean
     maxDiscount?: FloatFilter<"User"> | number
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
@@ -13536,6 +13550,7 @@ export namespace Prisma {
     permDeleteAudit?: SortOrder
     permBulkUpdate?: SortOrder
     permBackDateSale?: SortOrder
+    permViewInsights?: SortOrder
     maxDiscount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -13570,6 +13585,7 @@ export namespace Prisma {
     permDeleteAudit?: BoolFilter<"User"> | boolean
     permBulkUpdate?: BoolFilter<"User"> | boolean
     permBackDateSale?: BoolFilter<"User"> | boolean
+    permViewInsights?: BoolFilter<"User"> | boolean
     maxDiscount?: FloatFilter<"User"> | number
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
@@ -13601,6 +13617,7 @@ export namespace Prisma {
     permDeleteAudit?: SortOrder
     permBulkUpdate?: SortOrder
     permBackDateSale?: SortOrder
+    permViewInsights?: SortOrder
     maxDiscount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -13638,6 +13655,7 @@ export namespace Prisma {
     permDeleteAudit?: BoolWithAggregatesFilter<"User"> | boolean
     permBulkUpdate?: BoolWithAggregatesFilter<"User"> | boolean
     permBackDateSale?: BoolWithAggregatesFilter<"User"> | boolean
+    permViewInsights?: BoolWithAggregatesFilter<"User"> | boolean
     maxDiscount?: FloatWithAggregatesFilter<"User"> | number
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
@@ -14455,6 +14473,7 @@ export namespace Prisma {
     permDeleteAudit?: boolean
     permBulkUpdate?: boolean
     permBackDateSale?: boolean
+    permViewInsights?: boolean
     maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -14486,6 +14505,7 @@ export namespace Prisma {
     permDeleteAudit?: boolean
     permBulkUpdate?: boolean
     permBackDateSale?: boolean
+    permViewInsights?: boolean
     maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -14517,6 +14537,7 @@ export namespace Prisma {
     permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
     permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
     permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewInsights?: BoolFieldUpdateOperationsInput | boolean
     maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14548,6 +14569,7 @@ export namespace Prisma {
     permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
     permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
     permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewInsights?: BoolFieldUpdateOperationsInput | boolean
     maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14579,6 +14601,7 @@ export namespace Prisma {
     permDeleteAudit?: boolean
     permBulkUpdate?: boolean
     permBackDateSale?: boolean
+    permViewInsights?: boolean
     maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -14608,6 +14631,7 @@ export namespace Prisma {
     permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
     permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
     permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewInsights?: BoolFieldUpdateOperationsInput | boolean
     maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14637,6 +14661,7 @@ export namespace Prisma {
     permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
     permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
     permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewInsights?: BoolFieldUpdateOperationsInput | boolean
     maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15608,6 +15633,7 @@ export namespace Prisma {
     permDeleteAudit?: SortOrder
     permBulkUpdate?: SortOrder
     permBackDateSale?: SortOrder
+    permViewInsights?: SortOrder
     maxDiscount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -15641,6 +15667,7 @@ export namespace Prisma {
     permDeleteAudit?: SortOrder
     permBulkUpdate?: SortOrder
     permBackDateSale?: SortOrder
+    permViewInsights?: SortOrder
     maxDiscount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -15670,6 +15697,7 @@ export namespace Prisma {
     permDeleteAudit?: SortOrder
     permBulkUpdate?: SortOrder
     permBackDateSale?: SortOrder
+    permViewInsights?: SortOrder
     maxDiscount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -17476,6 +17504,7 @@ export namespace Prisma {
     permDeleteAudit?: boolean
     permBulkUpdate?: boolean
     permBackDateSale?: boolean
+    permViewInsights?: boolean
     maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -17506,6 +17535,7 @@ export namespace Prisma {
     permDeleteAudit?: boolean
     permBulkUpdate?: boolean
     permBackDateSale?: boolean
+    permViewInsights?: boolean
     maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -17591,6 +17621,7 @@ export namespace Prisma {
     permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
     permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
     permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewInsights?: BoolFieldUpdateOperationsInput | boolean
     maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17621,6 +17652,7 @@ export namespace Prisma {
     permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
     permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
     permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewInsights?: BoolFieldUpdateOperationsInput | boolean
     maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17867,6 +17899,7 @@ export namespace Prisma {
     permDeleteAudit?: boolean
     permBulkUpdate?: boolean
     permBackDateSale?: boolean
+    permViewInsights?: boolean
     maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -17897,6 +17930,7 @@ export namespace Prisma {
     permDeleteAudit?: boolean
     permBulkUpdate?: boolean
     permBackDateSale?: boolean
+    permViewInsights?: boolean
     maxDiscount?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -17943,6 +17977,7 @@ export namespace Prisma {
     permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
     permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
     permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewInsights?: BoolFieldUpdateOperationsInput | boolean
     maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17973,6 +18008,7 @@ export namespace Prisma {
     permDeleteAudit?: BoolFieldUpdateOperationsInput | boolean
     permBulkUpdate?: BoolFieldUpdateOperationsInput | boolean
     permBackDateSale?: BoolFieldUpdateOperationsInput | boolean
+    permViewInsights?: BoolFieldUpdateOperationsInput | boolean
     maxDiscount?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

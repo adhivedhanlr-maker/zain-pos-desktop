@@ -12,12 +12,37 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  password  String
-  name      String
-  role      String // 'ADMIN' or 'CASHIER'
-  isActive  Boolean  @default(true)
+  id       String  @id @default(uuid())
+  username String  @unique
+  password String
+  name     String
+  role     String // 'ADMIN' or 'CASHIER'
+  isActive Boolean @default(true)
+
+  // Permissions
+  permPrintSticker  Boolean @default(true)
+  permAddItem       Boolean @default(true) // Can add items to cart/sale
+  permDeleteProduct Boolean @default(true) // Can remove items from cart
+  permVoidSale      Boolean @default(true) // Can void completed sales
+  permViewReports   Boolean @default(true) // Can view General Reports
+  permEditSettings  Boolean @default(false)
+
+  // New Permissions
+  permManageProducts  Boolean @default(false) // Can access Products Page (Add/Edit/Delete products in DB)
+  permViewSales       Boolean @default(false) // Can view Sales History
+  permViewGstReports  Boolean @default(false) // Can view GST Reports section
+  permEditSales       Boolean @default(false) // Can edit/exchange sales
+  permManageInventory Boolean @default(false) // Can adjust stock/movements
+  permManageUsers     Boolean @default(false) // Comprehensive user management
+  permViewCostPrice   Boolean @default(false) // Can see cost prices
+  permChangePayment   Boolean @default(false) // Can update payment method after sale
+  permDeleteAudit     Boolean @default(false) // Can clear activity logs
+  permBulkUpdate      Boolean @default(false) // Can perform bulk updates
+  permBackDateSale    Boolean @default(false) // Can record sales for previous dates
+  permViewInsights    Boolean @default(false) // Can view AI Forecasting and Insights
+
+  maxDiscount Float @default(0.0) // Max ₹ discount allowed per item/bill
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

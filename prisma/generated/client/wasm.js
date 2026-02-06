@@ -143,6 +143,7 @@ exports.Prisma.UserScalarFieldEnum = {
   permDeleteAudit: 'permDeleteAudit',
   permBulkUpdate: 'permBulkUpdate',
   permBackDateSale: 'permBackDateSale',
+  permViewInsights: 'permViewInsights',
   maxDiscount: 'maxDiscount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

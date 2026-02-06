@@ -86,26 +86,135 @@ function getDatabasePath() {
     return dbPath;
 }
 
+function getPersistentBackupPath() {
+    const backupDir = path.join(app.getPath('documents'), 'ZainPOS');
+    return path.join(backupDir, 'backup-latest.db');
+}
+
+function getUserDataLatestBackupPath() {
+    return path.join(app.getPath('userData'), 'backups', 'backup-latest.db');
+}
+
+function getRestoreCandidates() {
+    const candidates: string[] = [];
+
+    const envPath = process.env.ZAIN_POS_BACKUP_PATH;
+    if (envPath) candidates.push(envPath);
+
+    // Durable backup outside app install/userData (survives reinstalls if user keeps Documents)
+    candidates.push(getPersistentBackupPath());
+
+    // Latest backup in userData (if still present)
+    candidates.push(getUserDataLatestBackupPath());
+
+    // Bundled DB as a last resort
+    candidates.push(path.join(process.resourcesPath, 'pos.db'));
+
+    // Dev convenience: allow migration backup if running from repo
+    if (!app.isPackaged) {
+        candidates.push(path.join(process.cwd(), 'migration', 'backup_zain_pos_2026-02-04.db'));
+    }
+
+    return candidates;
+}
+
+function getMtimeMs(filePath: string) {
+    try {
+        return fs.statSync(filePath).mtimeMs;
+    } catch {
+        return 0;
+    }
+}
+
+function shouldRestoreFrom(sourcePath: string, targetPath: string) {
+    if (!fs.existsSync(sourcePath)) return false;
+    if (!fs.existsSync(targetPath)) return true;
+    return getMtimeMs(sourcePath) > getMtimeMs(targetPath);
+}
+
+async function restoreDatabaseFromSource(sourcePath: string, targetPath: string) {
+    await prisma.$disconnect();
+    await new Promise(r => setTimeout(r, 1000));
+    fs.copyFileSync(sourcePath, targetPath);
+
+    prisma = new PrismaClient({
+        datasources: {
+            db: {
+                url: `file:${targetPath}`
+            }
+        }
+    });
+}
+
 async function ensureSchemaUpdated() {
     try {
-        // 1. Check if permViewInsights column exists in user table
-        const tableInfo: any[] = await prisma.$queryRawUnsafe(`PRAGMA table_info(user)`);
-        const hasInsightsCol = tableInfo.some(col => col.name === 'permViewInsights');
+        const tableRows: any[] = await prisma.$queryRawUnsafe(
+            `SELECT name FROM sqlite_master WHERE type='table' AND lower(name) IN ('user','users')`
+        );
+        const userTable = tableRows?.[0]?.name || 'User';
 
-        if (!hasInsightsCol) {
-            console.log('Migrating database: Adding permViewInsights column...');
-            await prisma.$executeRawUnsafe(`ALTER TABLE user ADD COLUMN permViewInsights BOOLEAN DEFAULT 0`);
-            console.log('Migration successful.');
+        const tableInfo: any[] = await prisma.$queryRawUnsafe(`PRAGMA table_info("${userTable}")`);
+        const hasColumn = (name: string) => tableInfo.some(col => col.name === name);
+
+        // Add missing permission columns for older databases
+        const columnsToAdd = [
+            { name: 'permPrintSticker', type: 'BOOLEAN', defaultValue: 1 },
+            { name: 'permAddItem', type: 'BOOLEAN', defaultValue: 1 },
+            { name: 'permDeleteProduct', type: 'BOOLEAN', defaultValue: 1 },
+            { name: 'permVoidSale', type: 'BOOLEAN', defaultValue: 1 },
+            { name: 'permViewReports', type: 'BOOLEAN', defaultValue: 1 },
+            { name: 'permEditSettings', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permManageProducts', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permViewSales', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permViewGstReports', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permEditSales', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permManageInventory', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permManageUsers', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permViewCostPrice', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permChangePayment', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permDeleteAudit', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permBulkUpdate', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permBackDateSale', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'permViewInsights', type: 'BOOLEAN', defaultValue: 0 },
+            { name: 'maxDiscount', type: 'REAL', defaultValue: 0 },
+        ];
+
+        for (const col of columnsToAdd) {
+            if (!hasColumn(col.name)) {
+                console.log(`Migrating database: Adding ${col.name} column...`);
+                await prisma.$executeRawUnsafe(
+                    `ALTER TABLE "${userTable}" ADD COLUMN ${col.name} ${col.type} DEFAULT ${col.defaultValue}`
+                );
+            }
         }
 
-        // Add other columns here as we expand the app
+        console.log('User table migration complete.');
     } catch (error) {
         console.error('Migration error:', error);
     }
 }
 
+async function ensureUserSchemaReady() {
+    await ensureSchemaUpdated();
+}
+
+async function ensureDefaultAdmin() {
+    await ensureUserSchemaReady();
+    const existing = await prisma.user.findFirst({ where: { username: 'admin' } });
+    if (existing) return existing;
+    return prisma.user.create({
+        data: {
+            username: 'admin',
+            password: 'admin123',
+            name: 'Admin',
+            role: 'ADMIN',
+            isActive: true
+        }
+    });
+}
+
 async function initializePrisma() {
-    const dbPath = getDatabasePath();
+    let dbPath = getDatabasePath();
     console.log('Initializing database at:', dbPath);
 
     prisma = new PrismaClient({
@@ -115,6 +224,63 @@ async function initializePrisma() {
             }
         }
     });
+
+    // ---------------------------------------------------------
+    // PERMANENT FIX: Auto-Restore if Database is Empty
+    // ---------------------------------------------------------
+    try {
+        const userCount = await prisma.user.count();
+        console.log(`Database User Count: ${userCount}`);
+
+        if (app.isPackaged) {
+            const candidates = getRestoreCandidates().filter(p => fs.existsSync(p));
+
+            // Prefer restoring if a newer backup exists (e.g., after reinstall/update)
+            const newerCandidate = candidates.find(p => shouldRestoreFrom(p, dbPath));
+            const shouldRestore = userCount === 0 || Boolean(newerCandidate);
+
+            if (shouldRestore) {
+                console.log('⚠️ Attempting auto-restore from known backups...');
+                const sourcePath = newerCandidate || candidates[0];
+                if (!sourcePath) {
+                    console.warn('No restore candidates found. Cannot auto-restore.');
+                } else {
+                    console.log(`Overwriting ${dbPath} with ${sourcePath}`);
+                    await restoreDatabaseFromSource(sourcePath, dbPath);
+                    console.log('✅ Database auto-restored successfully.');
+                }
+            }
+
+            // If still empty, show a clear message
+            const finalUserCount = await prisma.user.count();
+            if (finalUserCount === 0) {
+                // Create a default admin user so login is always possible
+                try {
+                    await prisma.user.create({
+                        data: {
+                            username: 'admin',
+                            password: 'admin123',
+                            name: 'Admin',
+                            role: 'ADMIN',
+                            isActive: true
+                        }
+                    });
+                    console.log('✅ Default admin user created.');
+                } catch (createErr) {
+                    console.error('Failed to create default admin user:', createErr);
+                }
+
+                dialog.showMessageBoxSync({
+                    type: 'warning',
+                    title: 'No Users Found',
+                    message: 'No users were found after auto-restore. Please make sure your backup file exists at:\n\nC:\\Users\\PC\\Documents\\ZainPOS\\backup-latest.db\n\nThen restart the app.'
+                });
+            }
+        }
+    } catch (e) {
+        console.error('Auto-restore check failed:', e);
+    }
+    // ---------------------------------------------------------
 
     // Run auto-migrations
     await ensureSchemaUpdated();
@@ -214,6 +380,18 @@ const performAutoBackup = async () => {
 
         fs.copyFileSync(dbPath, backupPath);
         console.log('Auto-backup created at:', backupPath);
+
+        // Maintain a stable "latest" backup in userData
+        const latestPath = getUserDataLatestBackupPath();
+        fs.copyFileSync(dbPath, latestPath);
+
+        // Maintain a durable backup in Documents (survives reinstall if user keeps it)
+        const persistentPath = getPersistentBackupPath();
+        const persistentDir = path.dirname(persistentPath);
+        if (!fs.existsSync(persistentDir)) {
+            fs.mkdirSync(persistentDir, { recursive: true });
+        }
+        fs.copyFileSync(dbPath, persistentPath);
 
         // Prune old backups (keep last 10)
         const files = fs.readdirSync(backupDir).filter(f => f.endsWith('.db')).sort();
@@ -582,6 +760,14 @@ ipcMain.handle('products:import', async () => {
         let stats = { success: 0, skipped: 0, errors: 0, details: [] as string[] };
         const categoryMap = new Map<string, string>();
 
+        const getVal = (row: any, keys: string[]) => {
+            for (const k of keys) {
+                const found = Object.keys(row).find(rk => rk.toLowerCase() === k.toLowerCase());
+                if (found) return row[found];
+            }
+            return null;
+        };
+
         // Cache existing categories
         try {
             const categories = await prisma.category.findMany();
@@ -590,18 +776,13 @@ ipcMain.handle('products:import', async () => {
 
         for (const row of rawData as any[]) {
             try {
-                // Normalize keys
-                const getVal = (keys: string[]) => {
-                    for (const k of keys) {
-                        const found = Object.keys(row).find(rk => rk.toLowerCase() === k.toLowerCase());
-                        if (found) return row[found];
-                    }
-                    return null;
-                };
-
-                const productName = getVal(['Product Name', 'Item Name', 'Name']);
-                const barcode = getVal(['Barcode', 'Bar Code'])?.toString();
-                const categoryName = getVal(['Category', 'Category Name']) || 'Uncategorized';
+                const productName = getVal(row, [
+                    'Product Name', 'Item Name', 'Name', 'Product_Name', 'Item_Name', 'ITEM_NAME'
+                ]);
+                const barcode = getVal(row, ['Barcode', 'Bar Code', 'Bar_Code'])?.toString();
+                const categoryName = getVal(row, [
+                    'Category', 'Category Name', 'Category_Name', 'Item Category', 'Item_Category', 'CATEGORY'
+                ]) || 'Uncategorized';
 
                 if (!productName) {
                     stats.skipped++;
@@ -635,8 +816,8 @@ ipcMain.handle('products:import', async () => {
                         data: {
                             name: productName,
                             categoryId: categoryId || '',
-                            hsn: getVal(['HSN Code', 'HSN'])?.toString(),
-                            taxRate: parseFloat(getVal(['GST %', 'GST', 'Tax']) || '5')
+                            hsn: getVal(row, ['HSN Code', 'HSN', 'HSN_Code'])?.toString(),
+                            taxRate: parseFloat(getVal(row, ['GST %', 'GST', 'Tax', 'GST_Rate']) || '5')
                         }
                     });
                 }
@@ -645,14 +826,14 @@ ipcMain.handle('products:import', async () => {
                 await prisma.productVariant.create({
                     data: {
                         productId: product.id,
-                        size: getVal(['Size'])?.toString() || 'Standard',
-                        color: getVal(['Color'])?.toString(),
+                        size: getVal(row, ['Size'])?.toString() || 'Standard',
+                        color: getVal(row, ['Color'])?.toString(),
                         barcode: barcode || `GEN-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                         sku: `${productName.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-6)}`,
-                        mrp: parseFloat(getVal(['MRP']) || '0'),
-                        sellingPrice: parseFloat(getVal(['Selling Price', 'Price']) || '0'),
-                        costPrice: parseFloat(getVal(['Purchase Price', 'Cost']) || '0'),
-                        stock: parseInt(getVal(['Stock', 'Qty']) || '0')
+                        mrp: parseFloat(getVal(row, ['MRP', 'Rate', 'Price']) || '0'),
+                        sellingPrice: parseFloat(getVal(row, ['Selling Price', 'Sale Price', 'Selling_Price', 'Sale_Price', 'Price']) || '0'),
+                        costPrice: parseFloat(getVal(row, ['Purchase Price', 'Purchase_Price', 'Cost']) || '0'),
+                        stock: parseInt(getVal(row, ['Stock', 'Qty', 'Quantity', 'Stock Quantity', 'Stock_Quantity']) || '0')
                     }
                 });
 
@@ -664,7 +845,228 @@ ipcMain.handle('products:import', async () => {
             }
         }
 
+        dialog.showMessageBoxSync({
+            type: stats.errors > 0 ? 'warning' : 'info',
+            title: 'Import Complete',
+            message: `Products imported.\n\nSuccess: ${stats.success}\nSkipped: ${stats.skipped}\nErrors: ${stats.errors}`
+        });
+
         return { success: true, stats };
+    } catch (error: any) {
+        console.error(error);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('data:importAll', async () => {
+    try {
+        const { canceled, filePaths } = await dialog.showOpenDialog({
+            title: 'Select Excel File',
+            filters: [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }],
+            properties: ['openFile']
+        });
+
+        if (canceled || filePaths.length === 0) return { success: false, message: 'Cancelled' };
+
+        const filePath = filePaths[0];
+        const workbook = XLSX.readFile(filePath);
+
+        const getVal = (row: any, keys: string[]) => {
+            for (const k of keys) {
+                const found = Object.keys(row).find(rk => rk.toLowerCase() === k.toLowerCase());
+                if (found) return row[found];
+            }
+            return null;
+        };
+
+        let summary = {
+            products: 0,
+            customers: 0,
+            sales: 0,
+            skipped: 0,
+            errors: 0
+        };
+
+        const detectSheetType = (rows: any[]) => {
+            if (rows.length === 0) return 'unknown';
+            const keys = Object.keys(rows[0]).map(k => k.toLowerCase());
+            if (keys.some(k => k.includes('bill') || k.includes('payment') || k.includes('cashier'))) return 'sales';
+            if (keys.some(k => k.includes('customer') || k.includes('gstin'))) return 'customers';
+            if (keys.some(k => k.includes('product') || k.includes('barcode') || k.includes('mrp'))) return 'products';
+            return 'unknown';
+        };
+
+        const importProductsRows = async (rows: any[]) => {
+            for (const row of rows) {
+                try {
+                    const productName = getVal(row, ['Product Name', 'Item Name', 'Name', 'Product_Name', 'Item_Name']);
+                    if (!productName) {
+                        summary.skipped++;
+                        continue;
+                    }
+
+                    const categoryName = getVal(row, ['Category', 'Category Name', 'Category_Name']) || 'Uncategorized';
+                    let category = await prisma.category.findFirst({ where: { name: categoryName } });
+                    if (!category) {
+                        category = await prisma.category.create({ data: { name: categoryName } });
+                    }
+
+                    let product = await prisma.product.findFirst({ where: { name: productName } });
+                    if (!product) {
+                        product = await prisma.product.create({
+                            data: {
+                                name: productName,
+                                categoryId: category.id,
+                                hsn: getVal(row, ['HSN', 'HSN Code', 'HSN_Code'])?.toString(),
+                                taxRate: parseFloat(getVal(row, ['Tax %', 'GST %', 'GST', 'GST_Rate']) || '5')
+                            }
+                        });
+                    }
+
+                    const barcode = getVal(row, ['Barcode', 'Bar Code', 'Bar_Code'])?.toString();
+                    const existingVariant = barcode
+                        ? await prisma.productVariant.findFirst({ where: { barcode } })
+                        : null;
+                    if (existingVariant) {
+                        summary.skipped++;
+                        continue;
+                    }
+
+                    await prisma.productVariant.create({
+                        data: {
+                            productId: product.id,
+                            size: getVal(row, ['Size'])?.toString() || 'Standard',
+                            color: getVal(row, ['Color'])?.toString(),
+                            barcode: barcode || `GEN-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                            sku: `${productName.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-6)}`,
+                            mrp: parseFloat(getVal(row, ['MRP', 'Rate', 'Price']) || '0'),
+                            sellingPrice: parseFloat(getVal(row, ['Selling Price', 'Sale Price', 'Selling_Price', 'Sale_Price', 'Price']) || '0'),
+                            costPrice: parseFloat(getVal(row, ['Purchase Price', 'Purchase_Price', 'Cost']) || '0'),
+                            stock: parseInt(getVal(row, ['Stock', 'Qty', 'Quantity', 'Stock Quantity', 'Stock_Quantity']) || '0')
+                        }
+                    });
+
+                    summary.products++;
+                } catch (e) {
+                    summary.errors++;
+                }
+            }
+        };
+
+        const importCustomersRows = async (rows: any[]) => {
+            for (const row of rows) {
+                try {
+                    const name = getVal(row, ['Customer Name', 'Name']);
+                    if (!name) {
+                        summary.skipped++;
+                        continue;
+                    }
+                    const phone = getVal(row, ['Phone', 'Mobile', 'Phone No'])?.toString();
+                    const email = getVal(row, ['Email'])?.toString();
+                    const address = getVal(row, ['Address'])?.toString();
+                    const gstin = getVal(row, ['GSTIN', 'GSTIN No'])?.toString();
+
+                    if (phone) {
+                        await prisma.customer.upsert({
+                            where: { phone },
+                            update: { name, email, address, gstin },
+                            create: { name, phone, email, address, gstin }
+                        });
+                    } else {
+                        await prisma.customer.create({
+                            data: { name, phone: null, email, address, gstin }
+                        });
+                    }
+                    summary.customers++;
+                } catch (e) {
+                    summary.errors++;
+                }
+            }
+        };
+
+        const importSalesRows = async (rows: any[]) => {
+            await ensureDefaultAdmin();
+            for (const row of rows) {
+                try {
+                    const total = parseFloat(getVal(row, ['Total']) || '0');
+                    const billNo = parseInt(getVal(row, ['Bill No']) || '0');
+                    const status = getVal(row, ['Status'])?.toString() || 'COMPLETED';
+                    const paymentMethod = getVal(row, ['Payment Mode'])?.toString() || 'CASH';
+                    const dateVal = getVal(row, ['Date']);
+                    const createdAt = dateVal ? new Date(dateVal) : new Date();
+
+                    const cashier = getVal(row, ['Cashier'])?.toString();
+                    const user = cashier
+                        ? await prisma.user.findFirst({ where: { username: cashier } })
+                        : await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+                    const userId = user?.id || (await ensureDefaultAdmin()).id;
+
+                    if (billNo > 0) {
+                        const exists = await prisma.sale.findFirst({ where: { billNo } });
+                        if (exists) {
+                            summary.skipped++;
+                            continue;
+                        }
+                    }
+
+                    await prisma.sale.create({
+                        data: {
+                            billNo: billNo > 0 ? billNo : Date.now(),
+                            userId,
+                            customerName: getVal(row, ['Customer'])?.toString() || null,
+                            customerPhone: getVal(row, ['Phone'])?.toString() || null,
+                            subtotal: total,
+                            discount: 0,
+                            discountPercent: 0,
+                            taxAmount: 0,
+                            cgst: 0,
+                            sgst: 0,
+                            grandTotal: total,
+                            paymentMethod,
+                            paidAmount: total,
+                            changeAmount: 0,
+                            status,
+                            remarks: 'Imported from Excel',
+                            isHistorical: true,
+                            importedFrom: 'Excel',
+                            createdAt
+                        }
+                    });
+                    summary.sales++;
+                } catch (e) {
+                    summary.errors++;
+                }
+            }
+        };
+
+        const productsSheet = workbook.Sheets['Products'];
+        if (productsSheet) await importProductsRows(XLSX.utils.sheet_to_json(productsSheet));
+
+        const customersSheet = workbook.Sheets['Customers'];
+        if (customersSheet) await importCustomersRows(XLSX.utils.sheet_to_json(customersSheet));
+
+        const salesSheet = workbook.Sheets['Sales'];
+        if (salesSheet) await importSalesRows(XLSX.utils.sheet_to_json(salesSheet));
+
+        // Fallback: if no named sheets, try the first sheet and detect type
+        if (!productsSheet && !customersSheet && !salesSheet) {
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet);
+            const type = detectSheetType(rows as any[]);
+
+            if (type === 'products') await importProductsRows(rows as any[]);
+            else if (type === 'customers') await importCustomersRows(rows as any[]);
+            else if (type === 'sales') await importSalesRows(rows as any[]);
+            else summary.skipped += (rows as any[]).length;
+        }
+
+        dialog.showMessageBoxSync({
+            type: summary.errors > 0 ? 'warning' : 'info',
+            title: 'Import Complete',
+            message: `Import finished.\n\nProducts: ${summary.products}\nCustomers: ${summary.customers}\nSales: ${summary.sales}\nSkipped: ${summary.skipped}\nErrors: ${summary.errors}`
+        });
+
+        return { success: true };
     } catch (error: any) {
         console.error(error);
         return { success: false, error: error.message };
@@ -709,19 +1111,64 @@ ipcMain.handle('db:restore', async () => {
 
         const backupPath = filePaths[0];
 
-        let targetPath = path.join(process.cwd(), 'pos.db');
-        if (!fs.existsSync(targetPath) && fs.existsSync(path.join(process.cwd(), 'prisma/pos.db'))) {
-            targetPath = path.join(process.cwd(), 'prisma/pos.db');
-        }
+        // Use the CENTRAL TRUTH for database path
+        const targetPath = getDatabasePath();
+
+        console.log(`Resoring database from ${backupPath} to ${targetPath}`);
 
         await prisma.$disconnect();
-        fs.copyFileSync(backupPath, targetPath);
 
-        app.relaunch();
-        app.quit();
+        // Small safety delay to ensure file handle is released
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Restore into the active DB
+        fs.copyFileSync(backupPath, targetPath);
+        console.log('Database restore completed.');
+
+        // Also update durable "latest" backups for future reinstalls
+        const userDataLatest = getUserDataLatestBackupPath();
+        const persistentLatest = getPersistentBackupPath();
+        const persistentDir = path.dirname(persistentLatest);
+        if (!fs.existsSync(path.dirname(userDataLatest))) {
+            fs.mkdirSync(path.dirname(userDataLatest), { recursive: true });
+        }
+        if (!fs.existsSync(persistentDir)) {
+            fs.mkdirSync(persistentDir, { recursive: true });
+        }
+        fs.copyFileSync(backupPath, userDataLatest);
+        fs.copyFileSync(backupPath, persistentLatest);
+
+        // Re-open and migrate schema, then report counts
+        await restoreDatabaseFromSource(targetPath, targetPath);
+        await ensureSchemaUpdated();
+        const userCount = await prisma.user.count();
+        const productCount = await prisma.product.count();
+        const saleCount = await prisma.sale.count();
+
+        dialog.showMessageBoxSync({
+            type: 'info',
+            title: 'Restore Complete',
+            message: `Restore finished.\n\nUsers: ${userCount}\nProducts: ${productCount}\nSales: ${saleCount}`
+        });
+
+        // Smart Restart Logic
+        const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+        if (isDev) {
+            dialog.showMessageBoxSync({
+                type: 'info',
+                title: 'Restart Required',
+                message: 'Database restored successfully.\n\nPlease manually restart your development server (npm run dev) to apply changes.'
+            });
+            app.quit();
+        } else {
+            app.relaunch();
+            app.quit();
+        }
 
         return { success: true };
     } catch (error: any) {
+        console.error('Restore failed:', error);
         return { success: false, error: error.message };
     }
 });
@@ -729,6 +1176,7 @@ ipcMain.handle('db:restore', async () => {
 // User Management Handlers
 ipcMain.handle('users:list', async () => {
     try {
+        await ensureUserSchemaReady();
         const users = await prisma.user.findMany({
             orderBy: { name: 'asc' },
             select: {
@@ -768,6 +1216,7 @@ ipcMain.handle('users:list', async () => {
 
 ipcMain.handle('users:create', async (_event, userData) => {
     try {
+        await ensureUserSchemaReady();
         if (!userData.username || !userData.password || !userData.name) {
             return { success: false, error: 'Missing required fields' };
         }
@@ -792,6 +1241,7 @@ ipcMain.handle('users:create', async (_event, userData) => {
 
 ipcMain.handle('users:update', async (_event, { id, data }) => {
     try {
+        await ensureUserSchemaReady();
         const user = await prisma.user.update({
             where: { id },
             data: data
@@ -804,6 +1254,7 @@ ipcMain.handle('users:update', async (_event, { id, data }) => {
 
 ipcMain.handle('users:changePassword', async (_event, { id, password }) => {
     try {
+        await ensureUserSchemaReady();
         await prisma.user.update({
             where: { id },
             data: { password }

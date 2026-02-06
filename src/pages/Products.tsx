@@ -77,13 +77,14 @@ export const Products: React.FC = () => {
         try {
             setLoading(true);
 
-            let where: any = {};
+            let where: any = { isActive: true };
             if (searchQuery) {
                 where = {
+                    isActive: true,
                     OR: [
                         { name: { contains: searchQuery } },
-                        { variants: { some: { barcode: { contains: searchQuery } } } },
-                        { variants: { some: { sku: { contains: searchQuery } } } }
+                        { variants: { some: { barcode: { contains: searchQuery }, isActive: true } } },
+                        { variants: { some: { sku: { contains: searchQuery }, isActive: true } } }
                     ]
                 };
             }
@@ -93,7 +94,7 @@ export const Products: React.FC = () => {
                     where,
                     include: {
                         category: true,
-                        variants: true,
+                        variants: { where: { isActive: true } },
                     },
                     take: 100, // Limit initial load/search results for performance
                     orderBy: { updatedAt: 'desc' }
@@ -236,14 +237,15 @@ export const Products: React.FC = () => {
         }
 
         try {
-            // Delete all variants first to avoid foreign key constraint errors
-            await db.productVariants.deleteMany({
+            // Soft delete to avoid breaking sales history
+            await db.productVariants.updateMany({
                 where: { productId: product.id },
+                data: { isActive: false }
             });
 
-            // Then delete the product
-            await db.products.delete({
+            await db.products.update({
                 where: { id: product.id },
+                data: { isActive: false }
             });
 
             loadData();

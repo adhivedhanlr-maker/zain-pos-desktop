@@ -27,62 +27,63 @@ export const MainLayout: React.FC = () => {
     const { user, login, logout } = useAuthStore();
 
     // Real-time Permission Sync
-    React.useEffect(() => {
-        if (!user?.id) return;
+    // Real-time Permission Sync - Disabled to prevent UI flickering/disappearing items
+    // React.useEffect(() => {
+    //     if (!user?.id) return;
 
-        const interval = setInterval(async () => {
-            try {
-                // Direct DB query to get latest permissions
-                const res = await window.electronAPI.db.query({
-                    model: 'user',
-                    method: 'findUnique',
-                    args: {
-                        where: { id: user.id },
-                        select: {
-                            id: true,
-                            username: true,
-                            password: true,
-                            name: true,
-                            role: true,
-                            isActive: true,
-                            permPrintSticker: true,
-                            permAddItem: true,
-                            permDeleteProduct: true,
-                            permVoidSale: true,
-                            permViewReports: true,
-                            permViewSales: true,
-                            permViewGstReports: true,
-                            permManageProducts: true,
-                            permEditSettings: true,
-                            permEditSales: true,
-                            permManageInventory: true,
-                            permManageUsers: true,
-                            permViewCostPrice: true,
-                            permChangePayment: true,
-                            permDeleteAudit: true,
-                            permBulkUpdate: true,
-                            permBackDateSale: true,
-                            permViewInsights: true,
-                            maxDiscount: true,
-                        }
-                    }
-                });
+    //     const interval = setInterval(async () => {
+    //         try {
+    //             // Direct DB query to get latest permissions
+    //             const res = await window.electronAPI.db.query({
+    //                 model: 'user',
+    //                 method: 'findUnique',
+    //                 args: {
+    //                     where: { id: user.id },
+    //                     select: {
+    //                         id: true,
+    //                         username: true,
+    //                         password: true,
+    //                         name: true,
+    //                         role: true,
+    //                         isActive: true,
+    //                         permPrintSticker: true,
+    //                         permAddItem: true,
+    //                         permDeleteProduct: true,
+    //                         permVoidSale: true,
+    //                         permViewReports: true,
+    //                         permViewSales: true,
+    //                         permViewGstReports: true,
+    //                         permManageProducts: true,
+    //                         permEditSettings: true,
+    //                         permEditSales: true,
+    //                         permManageInventory: true,
+    //                         permManageUsers: true,
+    //                         permViewCostPrice: true,
+    //                         permChangePayment: true,
+    //                         permDeleteAudit: true,
+    //                         permBulkUpdate: true,
+    //                         permBackDateSale: true,
+    //                         permViewInsights: true,
+    //                         maxDiscount: true,
+    //                     }
+    //                 }
+    //             });
 
-                if (res.success && res.data) {
-                    const freshUser = res.data;
+    //             if (res.success && res.data) {
+    //                 const freshUser = res.data;
 
-                    // Sanitize (remove password)
-                    const { password, ...safeUser } = freshUser;
+    //                 // Sanitize (remove password)
+    //                 const { password, ...safeUser } = freshUser;
 
-                    login(safeUser);
-                }
-            } catch (error) {
-                console.error('Permission sync failed:', error);
-            }
-        }, 2000); // Check every 2 seconds
+    //                 login(safeUser);
+    //             }
+    //         } catch (error) {
+    //             console.error('Permission sync failed:', error);
+    //         }
+    //     }, 2000); // Check every 2 seconds
 
-        return () => clearInterval(interval);
-    }, [user?.id]);
+    //     return () => clearInterval(interval);
+    // }, [user?.id]);
 
     React.useEffect(() => {
         if (darkMode) {
