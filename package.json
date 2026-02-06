@@ -63,6 +63,7 @@
   "build": {
     "appId": "com.zaingentspalace.pos",
     "productName": "ZAIN GENTS PALACE POS",
+    "asar": false,
     "directories": {
       "output": "release"
     },
