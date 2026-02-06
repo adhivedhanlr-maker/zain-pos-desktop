@@ -96,7 +96,6 @@ export const Products: React.FC = () => {
                         category: true,
                         variants: { where: { isActive: true } },
                     },
-                    take: 100, // Limit initial load/search results for performance
                     orderBy: { updatedAt: 'desc' }
                 }),
                 db.categories.findMany({}),

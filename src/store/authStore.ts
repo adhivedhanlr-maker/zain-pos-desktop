@@ -33,35 +33,9 @@ interface AuthState {
     logout: () => void;
 }
 
-const defaultAdmin: User = {
-    id: 'local-admin',
-    username: 'admin',
-    name: 'Admin',
-    role: 'ADMIN',
-    permPrintSticker: true,
-    permAddItem: true,
-    permDeleteProduct: true,
-    permVoidSale: true,
-    permViewReports: true,
-    permViewSales: true,
-    permViewGstReports: true,
-    permManageProducts: true,
-    permEditSettings: true,
-    permEditSales: true,
-    permManageInventory: true,
-    permManageUsers: true,
-    permViewCostPrice: true,
-    permChangePayment: true,
-    permDeleteAudit: true,
-    permBulkUpdate: true,
-    permBackDateSale: true,
-    permViewInsights: true,
-    maxDiscount: 100,
-};
-
 export const useAuthStore = create<AuthState>((set) => ({
-    user: defaultAdmin,
-    isAuthenticated: true,
+    user: null,
+    isAuthenticated: false,
     login: (user) => set({ user, isAuthenticated: true }),
-    logout: () => set({ user: defaultAdmin, isAuthenticated: true }),
+    logout: () => set({ user: null, isAuthenticated: false }),
 }));

@@ -30,13 +30,14 @@ export const POS: React.FC = () => {
 
     // New State for Header
     const [customerName, setCustomerName] = useState('Walk-in Customer');
-    const [billDate] = useState(new Date().toISOString().split('T')[0]);
+    const [billDate, setBillDate] = useState(new Date().toISOString().split('T')[0]);
 
     const barcodeInputRef = useRef<HTMLInputElement>(null);
     const discountInputRef = useRef<HTMLInputElement>(null);
     const paidAmountInputRef = useRef<HTMLInputElement>(null);
 
     const user = useAuthStore((state) => state.user);
+    const canBackDate = user?.role === 'ADMIN' || (user as any)?.permBackDateSale;
 
     const {
         items,
@@ -62,12 +63,16 @@ export const POS: React.FC = () => {
             setBillNo(saleToEdit.billNo);
             setCurrentSaleId(saleToEdit.id);
             setCustomerName(saleToEdit.customerName || 'Walk-in Customer');
+            if (saleToEdit.createdAt) {
+                setBillDate(new Date(saleToEdit.createdAt).toISOString().split('T')[0]);
+            }
             setPaymentMethod(saleToEdit.paymentMethod || 'CASH');
             setPaidAmount(saleToEdit.paidAmount?.toString() || '');
             setDiscountAmount(saleToEdit.discount?.toString() || '');
             setOriginalPaidAmount(saleToEdit.paidAmount || 0);
         } else {
             await loadNextBillNo();
+            setBillDate(new Date().toISOString().split('T')[0]);
         }
 
         await loadProducts();
@@ -284,6 +289,7 @@ export const POS: React.FC = () => {
         setCurrentSaleId(null);
         setOriginalPaidAmount(0);
         setCustomerName('Walk-in Customer');
+        setBillDate(new Date().toISOString().split('T')[0]);
         loadNextBillNo();
         loadProducts(); // Refresh stock
         // Focus barcode
@@ -317,23 +323,29 @@ export const POS: React.FC = () => {
 
             if (currentSaleId) {
                 // UPDATE EXISTING SALE
+                const updateData: any = {
+                    customerName: customerName || 'Walk-in Customer',
+                    subtotal,
+                    discount,
+                    taxAmount: tax,
+                    cgst,
+                    sgst,
+                    grandTotal: finalTotal,
+                    paymentMethod,
+                    paidAmount: paid,
+                    changeAmount: change,
+                    // For simplicity, we aren't diffing items exhaustively here, 
+                    // but ideally we should reconcile items. 
+                    // Given complexity, we'll log the generic update.
+                };
+
+                if (canBackDate && billDate) {
+                    updateData.createdAt = new Date(billDate);
+                }
+
                 sale = await db.sales.update({
                     where: { id: currentSaleId },
-                    data: {
-                        customerName: customerName || 'Walk-in Customer',
-                        subtotal,
-                        discount,
-                        taxAmount: tax,
-                        cgst,
-                        sgst,
-                        grandTotal: finalTotal,
-                        paymentMethod,
-                        paidAmount: paid,
-                        changeAmount: change,
-                        // For simplicity, we aren't diffing items exhaustively here, 
-                        // but ideally we should reconcile items. 
-                        // Given complexity, we'll log the generic update.
-                    }
+                    data: updateData,
                 });
 
                 // Log Activity
@@ -354,6 +366,7 @@ export const POS: React.FC = () => {
                         billNo,
                         userId: user!.id,
                         customerName: customerName || 'Walk-in Customer',
+                        createdAt: new Date(billDate),
                         subtotal,
                         discount: discount, // Global discount amount
                         discountPercent: 0,
@@ -507,8 +520,9 @@ export const POS: React.FC = () => {
                     <input
                         type="date"
                         value={billDate}
-                        readOnly
-                        className="input h-9 py-1 bg-gray-100 text-gray-500 cursor-not-allowed focus:ring-0"
+                        onChange={(e) => setBillDate(e.target.value)}
+                        readOnly={!canBackDate}
+                        className={`input h-9 py-1 ${canBackDate ? 'bg-white' : 'bg-gray-100 text-gray-500 cursor-not-allowed'} focus:ring-0`}
                     />
                 </div>
                 <div className="flex flex-col flex-1">

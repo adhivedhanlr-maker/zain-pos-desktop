@@ -50,6 +50,11 @@ const api = {
     devices: {
         list: () => ipcRenderer.invoke('devices:list'),
     },
+
+    // App
+    app: {
+        quit: () => ipcRenderer.invoke('app:quit'),
+    },
 };
 
 contextBridge.exposeInMainWorld('electronAPI', api);

@@ -1,5 +1,6 @@
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { POS } from './pages/POS';
 import { Products } from './pages/Products';
@@ -12,17 +13,18 @@ import { Users } from './pages/Users';
 import { Permissions } from './pages/Permissions';
 import { Forecasting } from './pages/Forecasting';
 import { MainLayout } from './components/Layout/MainLayout';
+import { useAuthStore } from './store/authStore';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Temporary bypass: allow access without login
-    return <>{children}</>;
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 };
 
 function App() {
     return (
         <HashRouter>
             <Routes>
-                <Route path="/login" element={<Navigate to="/" />} />
+                <Route path="/login" element={<Login />} />
                 <Route
                     path="/"
                     element={

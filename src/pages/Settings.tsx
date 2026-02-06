@@ -445,7 +445,22 @@ export const Settings: React.FC = () => {
                                         <h4 className="font-bold">Excel Template</h4>
                                         <p className="text-sm text-gray-500">Download the ready-to-fill product spreadsheet.</p>
                                     </div>
-                                    <Button variant="outline" className="w-full mt-auto" onClick={() => window.electronAPI.data.downloadProductTemplate()}>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full mt-auto"
+                                        onClick={async () => {
+                                            try {
+                                                const res = await window.electronAPI.data.downloadProductTemplate();
+                                                if (!res?.success) {
+                                                    alert(res?.error || 'Failed to download template.');
+                                                } else if (res?.path) {
+                                                    alert(`Template saved:\n${res.path}`);
+                                                }
+                                            } catch (e: any) {
+                                                alert(e?.message || 'Failed to download template.');
+                                            }
+                                        }}
+                                    >
                                         Download
                                     </Button>
                                 </div>
@@ -458,7 +473,20 @@ export const Settings: React.FC = () => {
                                         <h4 className="font-bold">Bulk Import</h4>
                                         <p className="text-sm text-gray-500">Upload your filled Excel template to bulk add products.</p>
                                     </div>
-                                    <Button variant="outline" className="w-full mt-auto" onClick={() => window.electronAPI.data.importAll()}>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full mt-auto"
+                                        onClick={async () => {
+                                            try {
+                                                const res = await window.electronAPI.data.importAll();
+                                                if (res?.success === false) {
+                                                    alert(res?.error || 'Import failed.');
+                                                }
+                                            } catch (e: any) {
+                                                alert(e?.message || 'Import failed.');
+                                            }
+                                        }}
+                                    >
                                         Import Data
                                     </Button>
                                 </div>
@@ -471,7 +499,22 @@ export const Settings: React.FC = () => {
                                         <h4 className="font-bold">Full Export</h4>
                                         <p className="text-sm text-gray-500">Export all Sales, Products, and Customer data to Excel.</p>
                                     </div>
-                                    <Button variant="outline" className="w-full mt-auto" onClick={() => window.electronAPI.data.exportAll()}>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full mt-auto"
+                                        onClick={async () => {
+                                            try {
+                                                const res = await window.electronAPI.data.exportAll();
+                                                if (!res?.success) {
+                                                    alert(res?.error || 'Export failed.');
+                                                } else if (res?.path) {
+                                                    alert(`Export saved:\n${res.path}`);
+                                                }
+                                            } catch (e: any) {
+                                                alert(e?.message || 'Export failed.');
+                                            }
+                                        }}
+                                    >
                                         Export Everything
                                     </Button>
                                 </div>

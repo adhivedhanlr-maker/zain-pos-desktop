@@ -616,6 +616,16 @@ ipcMain.handle('devices:list', async () => {
     }
 });
 
+ipcMain.handle('app:quit', async () => {
+    try {
+        await prisma.$disconnect();
+    } catch (e) {
+        // ignore
+    }
+    app.quit();
+    return { success: true };
+});
+
 // Product Import/Export Handlers
 ipcMain.handle('products:importTemplate', async () => {
     try {
@@ -644,7 +654,8 @@ ipcMain.handle('products:importTemplate', async () => {
         const cSheet = XLSX.utils.aoa_to_sheet([cHeaders]);
         XLSX.utils.book_append_sheet(workbook, cSheet, 'Customers');
 
-        XLSX.writeFile(workbook, filePath);
+        const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        fs.writeFileSync(filePath, buffer);
 
         return { success: true, path: filePath };
     } catch (error: any) {
@@ -732,7 +743,8 @@ ipcMain.handle('data:exportAll', async () => {
             }
         } catch (e) { console.error('Error exporting customers:', e); }
 
-        XLSX.writeFile(workbook, filePath);
+        const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        fs.writeFileSync(filePath, buffer);
 
         return { success: true, path: filePath };
     } catch (error: any) {
